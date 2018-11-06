@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>ddm.handson.akka</groupId>
+    <artifactId>handson-akka</artifactId>
+    <packaging>jar</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <name>handson-akka</name>
+    <url>http://maven.apache.org</url>
+
+    <!-- Use java 8 -->
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <!-- TODO: broken dependency: voldemort, find out how to fix later
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote</artifactId>
+            <version>2.0</version>
+        </dependency>
+        -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-slf4j</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit</artifactId>
+            <version>2.0</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>typesafe</id>
+            <name>Typesafe Repository</name>
+            <url>http://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+    </repositories>
+</project>
