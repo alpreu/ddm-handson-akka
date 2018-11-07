@@ -21,27 +21,30 @@
             <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-actor -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor</artifactId>
-            <version>2.0</version>
+            <artifactId>akka-actor_2.12</artifactId>
+            <version>2.5.17</version>
         </dependency>
-        <!-- TODO: broken dependency: voldemort, find out how to fix later
+        <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-remote -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote</artifactId>
-            <version>2.0</version>
+            <artifactId>akka-remote_2.12</artifactId>
+            <version>2.5.17</version>
         </dependency>
-        -->
+        <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-slf4j -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j</artifactId>
-            <version>2.0</version>
+            <artifactId>akka-slf4j_2.12</artifactId>
+            <version>2.5.17</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-testkit -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-testkit</artifactId>
-            <version>2.0</version>
+            <artifactId>akka-testkit_2.12</artifactId>
+            <version>2.5.17</version>
+            <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/commons-cli/commons-cli -->
         <dependency>
