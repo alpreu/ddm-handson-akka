@@ -1,4 +1,8 @@
 package ddm.handson.akka;
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.apache.commons.cli.*;
 import akka.actor.ActorSystem;
 
@@ -41,6 +45,7 @@ public class App {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
                 String inputFilename = line.getOptionValue("input");
+                startMaster(numberOfWorkers, numberOfSlaves, inputFilename);
             } else if (nodeType.equals("slave")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
@@ -53,6 +58,34 @@ public class App {
 
         ActorSystem system = ActorSystem.create("ExampleActorSystem");
         System.out.println("Successfully created actor system: " + system.name() + ".");
-        system.shutdown();
+        system.terminate();
+    }
+
+    protected static Config createConfiguration(String actorSystemName, String actorSystemRole, String host, int port, String masterhost, int masterport) {
+
+        // Create the Config with fallback to the application config
+        return ConfigFactory.parseString(
+                "akka.remote.netty.tcp.hostname = \"" + host + "\"\n" +
+                        "akka.remote.netty.tcp.port = " + port + "\n" +
+                        "akka.remote.artery.canonical.hostname = \"" + host + "\"\n" +
+                        "akka.remote.artery.canonical.port = " + port + "\n" +
+                        "akka.cluster.roles = [" + actorSystemRole + "]\n" +
+                        "akka.cluster.seed-nodes = [\"akka://" + actorSystemName + "@" + masterhost + ":" + masterport + "\"]")
+                .withFallback(ConfigFactory.load("octopus"));
+    }
+
+    private static void startMaster(int numberOfWorkers, int numberOfSlaves, String inputFile)
+    {
+        System.out.println("Starting master");
+        final Config config = createConfiguration("master", "master", "127.0.0.1",
+                64231, "127.0.0.1", 64231);
+        final ActorSystem actorSystem = ActorSystem.create("master", config);
+
+        ActorRef worker = actorSystem.actorOf(Props.create(Worker.class), "worker");
+        worker.tell(new TextMessage("Hi from master!"), actorSystem.);
+
+
+
+        actorSystem.terminate();
     }
 }
