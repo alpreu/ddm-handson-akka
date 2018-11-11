@@ -53,6 +53,6 @@ public class App {
 
         ActorSystem system = ActorSystem.create("ExampleActorSystem");
         System.out.println("Successfully created actor system: " + system.name() + ".");
-        system.shutdown();
+        system.terminate();
     }
 }
