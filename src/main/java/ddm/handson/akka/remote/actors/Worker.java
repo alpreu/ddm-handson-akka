@@ -1,7 +1,8 @@
-package ddm.handson.akka;
+package ddm.handson.akka.remote.actors;
 
 
 import akka.actor.AbstractActor;
+import ddm.handson.akka.TextMessage;
 
 public class Worker extends AbstractActor {
 
