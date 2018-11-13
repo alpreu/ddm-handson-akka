@@ -1,5 +1,6 @@
 package ddm.handson.akka;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import com.typesafe.config.Config;
 import ddm.handson.akka.remote.actors.*;
@@ -20,11 +21,11 @@ public class MasterActorSystem {
     private final String problemFile;
 
     private final ActorSystem system;
-    private final Listener listener;
-    private final Shepherd shepherd;
-    private final Reaper reaper;
-    private final Worker[] workers;
-    private final Slave[] slaves;
+    private final ActorRef master;
+    private final ActorRef listener;
+    private final ActorRef shepherd;
+    private final ActorRef reaper;
+    private final ActorRef[] slaves;
 
 
 
@@ -39,18 +40,19 @@ public class MasterActorSystem {
         final Config config = Utils.createConfiguration(DEFAULT_HOST, DEFAULT_PORT);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
-        listener = new Listener();
-        shepherd = new Shepherd();
-        reaper = new Reaper();
-        workers = new Worker[this.numberOfWorkers];
-
-        for (int i = 0; i < this.numberOfWorkers; ++i)
-        {
-            workers[i] = new Worker();
-        }
+        reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
+        master = system.actorOf(Master.props(), Master.DEFAULT_NAME);
+        listener = system.actorOf(Listener.props(), Listener.DEFAULT_NAME);
+        shepherd = system.actorOf(Shepherd.props(), Shepherd.DEFAULT_NAME);
 
         // Wait for slaves to connect;
         slaves = null;
+    }
+
+    // terminates the system
+    public void shutdown()
+    {
+
     }
 
     public void awaitTermination() throws TimeoutException, InterruptedException {

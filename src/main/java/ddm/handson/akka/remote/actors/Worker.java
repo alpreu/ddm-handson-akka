@@ -1,10 +1,11 @@
 package ddm.handson.akka.remote.actors;
 
 
-import akka.actor.AbstractActor;
+import akka.actor.AbstractLoggingActor;
+import akka.actor.Props;
 import ddm.handson.akka.TextMessage;
 
-public class Worker extends AbstractActor {
+public class Worker extends AbstractLoggingActor {
 
 
 
@@ -20,6 +21,17 @@ public class Worker extends AbstractActor {
     private void handle(TextMessage message) {
         System.out.println("Sender says: " + message.getMessage());
         this.sender().tell(new TextMessage("42"), this.self());
+    }
+
+    public static Props props()
+    {
+        return Props.create(Worker.class);
+    }
+
+    @Override
+    public void preStart() throws Exception {
+        super.preStart();
+        Reaper.watchWithDefaultReaper(this);
     }
 
 
