@@ -40,6 +40,12 @@
             <artifactId>akka-cluster_2.12</artifactId>
             <version>${akka-version}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-cluster-metrics -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-cluster-metrics_2.12</artifactId>
+            <version>${akka-version}</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-slf4j -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
