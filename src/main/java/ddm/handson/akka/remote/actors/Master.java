@@ -86,6 +86,8 @@ public class Master extends AbstractLoggingActor {
             for (int id = 1; id <= problemEntries.size(); ++id) {
                 this.log().info("id: {} pwd: {}", id, decryptedPasswords[id - 1]);
             }
+            // All done. Terminate.
+            stopSelfAndListener();
         }
     }
 
@@ -111,7 +113,7 @@ public class Master extends AbstractLoggingActor {
 
     private void stopSelfAndListener() {
         // Work is done. We don't need the listener anymore
-        this.listener.tell(new ShutdownMessage(), this.getSelf());
+        //this.listener.tell(new ShutdownMessage(), this.getSelf());
 
         // Stop self and all child actors by sending a poison pill.
         this.getSelf().tell(PoisonPill.getInstance(), this.getSelf());
