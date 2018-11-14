@@ -3,10 +3,13 @@ package ddm.handson.akka;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import com.typesafe.config.Config;
-import ddm.handson.akka.remote.actors.*;
+import ddm.handson.akka.remote.actors.Master;
+import ddm.handson.akka.remote.actors.Reaper;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class MasterActorSystem {
@@ -40,13 +43,29 @@ public class MasterActorSystem {
         final Config config = Utils.createConfiguration(DEFAULT_HOST, DEFAULT_PORT);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
+        // lade problem file
+        List<ProblemEntry> problemEntries = null;
+        try {
+            problemEntries = ProblemEntry.parseFile(problemFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
-        master = system.actorOf(Master.props(), Master.DEFAULT_NAME);
-        listener = system.actorOf(Listener.props(), Listener.DEFAULT_NAME);
-        shepherd = system.actorOf(Shepherd.props(), Shepherd.DEFAULT_NAME);
+        //listener = system.actorOf(Listener.props(), Listener.DEFAULT_NAME);
+        //shepherd = system.actorOf(Shepherd.props(), Shepherd.DEFAULT_NAME);
+        listener = null;
+        shepherd = null;
+        master = system.actorOf(Master.props(null, numberOfWorkers, problemEntries), Master.DEFAULT_NAME);
 
         // Wait for slaves to connect;
         slaves = null;
+
+        master.tell(new Master.Solve(), ActorRef.noSender());
+
+        // Listener gibt sie aus
+        // Beende das System
     }
 
     // terminates the system
