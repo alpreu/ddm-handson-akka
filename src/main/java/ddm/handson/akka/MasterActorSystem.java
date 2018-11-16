@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import com.typesafe.config.Config;
 import ddm.handson.akka.remote.actors.Master;
 import ddm.handson.akka.remote.actors.Reaper;
+import ddm.handson.akka.remote.actors.Shepherd;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
@@ -14,10 +15,10 @@ import java.util.concurrent.TimeoutException;
 
 public class MasterActorSystem {
 
-    private static final String DEFAULT_NAME = "MasterActorSystem";
-    private static final int DEFAULT_PORT = 64321;
-    private static final String DEFAULT_ROLE = "master";
-    private static final String DEFAULT_HOST = "127.0.0.1";
+    public static final String DEFAULT_NAME = "MasterActorSystem";
+    public static final int DEFAULT_PORT = 33333;
+    public static final String DEFAULT_ROLE = "master";
+    public static final String DEFAULT_HOST = "127.0.0.1";
 
     private final int numberOfWorkers;
     private final int numberOfSlaves;
@@ -28,9 +29,6 @@ public class MasterActorSystem {
     private final ActorRef listener;
     private final ActorRef shepherd;
     private final ActorRef reaper;
-    private final ActorRef[] slaves;
-
-
 
     // Ein master besteht aus 1 x Listener, 1 x Shepherd, 1 x Reaper, n x Workers
 
@@ -54,13 +52,9 @@ public class MasterActorSystem {
 
         reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
         //listener = system.actorOf(Listener.props(), Listener.DEFAULT_NAME);
-        //shepherd = system.actorOf(Shepherd.props(), Shepherd.DEFAULT_NAME);
         listener = null;
-        shepherd = null;
-        master = system.actorOf(Master.props(null, numberOfWorkers, problemEntries), Master.DEFAULT_NAME);
-
-        // Wait for slaves to connect;
-        slaves = null;
+        master = system.actorOf(Master.props(null, numberOfWorkers, numberOfSlaves, problemEntries), Master.DEFAULT_NAME);
+        shepherd = system.actorOf(Shepherd.props(master), Shepherd.DEFAULT_NAME);
 
         master.tell(new Master.Solve(), ActorRef.noSender());
 

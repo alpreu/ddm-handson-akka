@@ -39,6 +39,12 @@ public class Worker extends AbstractLoggingActor {
         Reaper.watchWithDefaultReaper(this);
     }
 
+    @Override
+    public void postStop() throws Exception {
+        super.postStop();
+        log().info("Worker {} shuttig down", self());
+    }
+
     private String hash(int number) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

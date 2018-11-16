@@ -52,6 +52,7 @@ public class App {
             } else if (nodeType.equals("slave")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
+                runAsSlave(hostAddress, numberOfWorkers);
             } else {
                 System.err.println("First argument must specify type: 'master' or 'slave'");
             }
@@ -76,5 +77,22 @@ public class App {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void runAsSlave(String masterHost, int numberOfWorkers)
+    {
+        // Master erstellen
+
+        SlaveActorSystem slaveActorSystem = new SlaveActorSystem(masterHost, MasterActorSystem.DEFAULT_PORT,
+                numberOfWorkers);
+
+        try {
+            slaveActorSystem.awaitTermination();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
     }
 }
