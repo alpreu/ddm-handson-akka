@@ -32,8 +32,20 @@ public class Master extends AbstractLoggingActor {
         }
     }
 
-    public static class FindLinearCombinationMessage implements Serializable{
+    public static class FindLinearCombinationMessage implements Serializable{ }
 
+    public static class FindLCSMessage implements Serializable { }
+
+    public static class LCSMessage implements Serializable {
+        public final int indexString1;
+        public final int indexString2;
+        public final int lcsLength;
+
+        public LCSMessage(int indexString1, int indexString2, int lcsLength) {
+            this.indexString1 = indexString1;
+            this.indexString2 = indexString2;
+            this.lcsLength = lcsLength;
+        }
     }
 
     public static final String DEFAULT_NAME = "master";
@@ -53,6 +65,9 @@ public class Master extends AbstractLoggingActor {
 
     private Router router;
 
+    private int[] lcsPair;
+    private List<LCSMessage> lcsPairs;
+
     public Master(final ActorRef listener, int numberOfWorkers, int expectedSlaves, final List<ProblemEntry> problemEntries) {
         this.listener = listener;
         this.expectedSlaves = expectedSlaves;
@@ -71,6 +86,7 @@ public class Master extends AbstractLoggingActor {
         decryptedPasswords = new int[problemEntries.size()];
         passwordsDecrypted = 0;
         router = null;
+        lcsPairs = null;
     }
 
     @Override
@@ -89,10 +105,11 @@ public class Master extends AbstractLoggingActor {
                 .match(RemoteSystemMessage.class, this::handle)
                 .match(FindLinearCombinationMessage.class, this::handle)
                 .match(Worker.LinearCombinationSolutionMessage.class, this::handle)
+                .match(FindLCSMessage.class, this::handle)
+                .match(LCSMessage.class, this::handle)
                 .build();
 
     }
-
 
     private void handle(Worker.LinearCombinationSolutionMessage message) {
         if (message.solution == -1)
@@ -111,6 +128,8 @@ public class Master extends AbstractLoggingActor {
             else
                 this.log().info("id: {} prefix: -1", i + 1);
         }
+
+        self().tell(new FindLCSMessage(), ActorRef.noSender());
     }
     private static int indexOf(int[] array, int value)
     {
@@ -248,6 +267,90 @@ public class Master extends AbstractLoggingActor {
     public static Props props(ActorRef listener, int numberOfWorkers, int numberOfSlaves, final List<ProblemEntry> problemEntries) {
         return Props.create(Master.class, listener, numberOfWorkers, numberOfSlaves, problemEntries);
     }
+
+    private void initLCSPair()
+    {
+        lcsPair = new int[]{0, 0};
+    }
+
+    private void nextLCSPair()
+    {
+        ++lcsPair[1];
+        if (lcsPair[1] >= problemEntries.size()) {
+            ++lcsPair[0];
+            lcsPair[1] = lcsPair[0] + 1;
+        }
+
+        if (lcsPair[0] == lcsPair[1]){
+            nextLCSPair();
+        }
+    }
+
+    private boolean pastLastPair()
+    {
+        return lcsPair[0] >= problemEntries.size() - 1;
+    }
+
+    private Worker.FindLCSMessage createFindLCSMessage(int indexString1, int indexString2) {
+        return new Worker.FindLCSMessage(indexString1, indexString2, problemEntries.get(indexString1).getGene(),
+                problemEntries.get(indexString2).getGene());
+    }
+
+    private void handle(FindLCSMessage message) {
+        startTime = System.currentTimeMillis();
+        log().info("Solving LCS");
+        initLCSPair();
+        lcsPairs = new ArrayList<>(((problemEntries.size() - 1) * problemEntries.size()) / 2);
+
+        for (int i = 0; i < workers.size(); ++i) {
+            nextLCSPair();
+
+            if (pastLastPair())
+                break;
+
+            router.route(createFindLCSMessage(lcsPair[0], lcsPair[1]), self());
+        }
+
+    }
+
+    private void handle(LCSMessage message) {
+
+        nextLCSPair();
+        if (!pastLastPair())
+        {
+            //log().info("Solving pair ({}, {})", lcsPair[0], lcsPair[1]);
+            sender().tell(createFindLCSMessage(lcsPair[0], lcsPair[1]), self());
+        }
+
+        lcsPairs.add(message);
+        //if (lcsPairs.size() ==  ((problemEntries.size() - 1) * problemEntries.size()) / 2) {
+        if (lcsPairs.size() ==  41) {
+            log().info("LCS solved in {} ms", System.currentTimeMillis() - startTime);
+
+            // Partner ausgeben.
+            int[] partners = new int[problemEntries.size()];
+            int[] lcs = new int[problemEntries.size()];
+
+            for (LCSMessage m : lcsPairs)
+            {
+                if (m.lcsLength > lcs[m.indexString1]) {
+                    lcs[m.indexString1] = m.lcsLength;
+                    lcs[m.indexString2] = m.lcsLength;
+                    partners[m.indexString1] = m.indexString2;
+                    partners[m.indexString2] = m.indexString1;
+                }
+            }
+            log().info("Printing Partners: ");
+            for (int i = 0; i < partners.length; ++i)
+            {
+                log().info("id: {} partner: {}", i + 1, partners[i]);
+            }
+
+        }
+    }
+
+
+
 
 
 }

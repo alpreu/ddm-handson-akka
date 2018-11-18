@@ -1,4 +1,4 @@
-package ddm.handson.akka;
+package ddm.handson.akka.util;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;

@@ -8,7 +8,6 @@ import ddm.handson.akka.ProblemEntry;
 import ddm.handson.akka.TextMessage;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
-import scala.Int;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -60,6 +59,20 @@ public class Worker extends AbstractLoggingActor {
         }
     }
 
+    public static class FindLCSMessage implements Serializable {
+        public final int indexString1;
+        public final int indexString2;
+        public final String string1;
+        public final String string2;
+
+        public FindLCSMessage(int indexString1, int indexString2, String string1, String string2) {
+            this.indexString1 = indexString1;
+            this.indexString2 = indexString2;
+            this.string1 = string1;
+            this.string2 = string2;
+        }
+    }
+
 
 
     @Override
@@ -69,6 +82,7 @@ public class Worker extends AbstractLoggingActor {
                 .match(TextMessage.class, this::handle)
                 .match(FindPasswordsMessage.class, this::handle)
                 .match(FindLinearCombinationMessage.class, this::handle)
+                .match(FindLCSMessage.class, this::handle)
                 .matchAny(object -> System.out.println("Unknown message"))
                 .build();
     }
@@ -173,5 +187,27 @@ public class Worker extends AbstractLoggingActor {
         }
 
         this.getSender().tell(new DecryptedPasswordsMessage(results.toArray(new IdPasswordPair[results.size()])), self());
+    }
+
+    private void handle(FindLCSMessage message1) {
+
+        FindLCSMessage message = new FindLCSMessage(message1.indexString1, message1.indexString2, "thisisatest", "testing123testing");
+
+
+        int[][] matrix = new int[message.string1.length() + 1][message.string2.length() + 1];
+
+        for (int i = 1; i <= message.string1.length(); ++i) {
+            for (int j = 1; j <= message.string2.length(); ++j) {
+                if (message.string1.charAt(i - 1) == message.string2.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1] + 1;
+                }
+                else {
+                    matrix[i][j] = Math.max(matrix[i - 1][j], matrix[i][j - 1]);
+                }
+            }
+        }
+
+        sender().tell(new Master.LCSMessage(message.indexString1, message.indexString2,
+                matrix[message.string1.length()][message.string2.length()]), self());
     }
 }
