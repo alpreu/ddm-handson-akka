@@ -8,15 +8,59 @@ import ddm.handson.akka.ProblemEntry;
 import ddm.handson.akka.TextMessage;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
+import scala.Int;
 
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 public class Worker extends AbstractLoggingActor {
+
+    public static class FindLinearCombinationMessage implements Serializable
+    {
+        public final long prefix;
+        public final byte prefixLength;
+        public final int sum;
+        public final int[] passwords;
+
+        public FindLinearCombinationMessage(long prefix, byte prefixLength,  int sum, int[] ascSortedPasswords) {
+            this.prefix = prefix;
+            this.prefixLength = prefixLength;
+            this.sum = sum;
+            this.passwords = ascSortedPasswords;
+        }
+
+        public int initializeStack(Stack<Integer> stack)
+        {
+            int sumOnStack = 0;
+
+            for (int i = 0; i < prefixLength && sumOnStack < sum; ++i)
+            {
+                if (((prefix >> i) & 1) == 1) {
+                    stack.push(i);
+                    sumOnStack += passwords[i];
+                }
+            }
+
+            return sumOnStack;
+        }
+    }
+
+    public static class LinearCombinationSolutionMessage implements Serializable
+    {
+        public final long solution;
+
+        public LinearCombinationSolutionMessage(long solution) {
+            this.solution = solution;
+        }
+    }
+
+
 
     @Override
     public Receive createReceive() {
@@ -24,8 +68,55 @@ public class Worker extends AbstractLoggingActor {
         return receiveBuilder()
                 .match(TextMessage.class, this::handle)
                 .match(FindPasswordsMessage.class, this::handle)
+                .match(FindLinearCombinationMessage.class, this::handle)
                 .matchAny(object -> System.out.println("Unknown message"))
                 .build();
+    }
+
+    private static long compressStack(Stack<Integer> stack)
+    {
+        long result = 0;
+
+        for (int e : stack)
+            result = result | (1l << e);
+
+        return result;
+    }
+
+    private static int fillStack(Stack<Integer> stack, int[] elements, int startIndex, int sumOnStack, int maxValue)
+    {
+        while (sumOnStack < maxValue && startIndex < elements.length)
+        {
+            stack.push(startIndex);
+            sumOnStack += elements[startIndex];
+            startIndex++;
+        }
+
+        return sumOnStack;
+    }
+
+    private void handle(FindLinearCombinationMessage message) {
+
+        Stack<Integer> selectedIndices = new Stack<>();
+        int sumOnStack = message.initializeStack(selectedIndices);
+        sumOnStack = fillStack(selectedIndices, message.passwords, message.prefixLength, sumOnStack, message.sum);
+
+        while (sumOnStack != message.sum && selectedIndices.size() > 1)
+        {
+            int index = selectedIndices.pop();
+            sumOnStack -= message.passwords[index];
+            index = selectedIndices.pop();
+            sumOnStack -= message.passwords[index];
+
+            sumOnStack = fillStack(selectedIndices, message.passwords, index + 1, sumOnStack, message.sum);
+        }
+
+        if (sumOnStack == message.sum) {
+
+            sender().tell(new LinearCombinationSolutionMessage(compressStack(selectedIndices)), self());
+        }
+
+        sender().tell(new LinearCombinationSolutionMessage(-1), self());
     }
 
     public static Props props()

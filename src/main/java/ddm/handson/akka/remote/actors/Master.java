@@ -13,6 +13,7 @@ import ddm.handson.akka.remote.messages.FindPasswordsMessage;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -31,6 +32,10 @@ public class Master extends AbstractLoggingActor {
         }
     }
 
+    public static class FindLinearCombinationMessage implements Serializable{
+
+    }
+
     public static final String DEFAULT_NAME = "master";
 
     private final ActorRef listener;
@@ -44,6 +49,9 @@ public class Master extends AbstractLoggingActor {
     private int passwordsDecrypted;
     private final int[] decryptedPasswords;
     private long startTime;
+
+
+    private Router router;
 
     public Master(final ActorRef listener, int numberOfWorkers, int expectedSlaves, final List<ProblemEntry> problemEntries) {
         this.listener = listener;
@@ -62,6 +70,7 @@ public class Master extends AbstractLoggingActor {
         this.problemEntries = problemEntries;
         decryptedPasswords = new int[problemEntries.size()];
         passwordsDecrypted = 0;
+        router = null;
     }
 
     @Override
@@ -78,9 +87,62 @@ public class Master extends AbstractLoggingActor {
                 .match(Solve.class, this::handle)
                 .match(DecryptedPasswordsMessage.class, this::handle)
                 .match(RemoteSystemMessage.class, this::handle)
+                .match(FindLinearCombinationMessage.class, this::handle)
+                .match(Worker.LinearCombinationSolutionMessage.class, this::handle)
                 .build();
 
     }
+
+
+    private void handle(Worker.LinearCombinationSolutionMessage message) {
+        if (message.solution == -1)
+            return;
+
+        this.log().info("Subset Sum solved in {} ms.", System.currentTimeMillis() - startTime);
+
+        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
+        Arrays.sort(pwds);
+
+        for (int i = 0; i < decryptedPasswords.length; ++i) {
+            int posInPwds = indexOf(pwds, decryptedPasswords[i]);
+            if ((message.solution & (1l << posInPwds)) != 0) {
+                this.log().info("id: {} prefix: 1", i + 1);
+            }
+            else
+                this.log().info("id: {} prefix: -1", i + 1);
+        }
+    }
+    private static int indexOf(int[] array, int value)
+    {
+        for (int i = 0; i < array.length; ++i)
+        {
+            if (array[i] == value)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void handle(FindLinearCombinationMessage message) {
+        this.log().info("Solving Subset Sum");
+        startTime = System.currentTimeMillis();
+
+        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
+        Arrays.sort(pwds);
+
+        int sum = 0;
+        for ( int i : pwds)
+            sum += i;
+
+        sum /= 2;
+
+        for (int i = 0; i < workers.size(); ++i)
+        {
+            router.route(new Worker.FindLinearCombinationMessage(i, (byte)Math.ceil(Math.log(i)), sum, pwds), self());
+        }
+    }
+
+
 
     private void handle(RemoteSystemMessage message) {
         if (expectedSlaves == connectedSlaves) {
@@ -130,8 +192,7 @@ public class Master extends AbstractLoggingActor {
             for (int id = 1; id <= problemEntries.size(); ++id) {
                 this.log().info("id: {} pwd: {}", id, decryptedPasswords[id - 1]);
             }
-            // All done. Terminate.
-            stopSelfAndListener();
+            self().tell(new FindLinearCombinationMessage(), ActorRef.noSender());
         }
     }
 
@@ -149,7 +210,7 @@ public class Master extends AbstractLoggingActor {
             routees.add(new ActorRefRoutee(a));
         }
 
-        Router router = new Router(new RoundRobinRoutingLogic(), routees);
+        router = new Router(new RoundRobinRoutingLogic(), routees);
 
         // 1. Knacke die Kennwörter
         startTime = System.currentTimeMillis();
