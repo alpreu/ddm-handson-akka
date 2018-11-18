@@ -14,8 +14,7 @@ public class Slave extends HandsonSystem {
         final ActorSystem system = createSystem(systemName, config);
 
         Cluster.get(system).registerOnMemberUp(() -> {
-            System.out.println("Slave: OnMemberUp Callback ran.");
-
+            System.out.println("Slave going up because system is ready");
             for (int i = 0; i < workers; i++) {
                 system.actorOf(Worker.props(), Worker.DEFAULT_NAME + "_slave_" + i);
             }

@@ -8,23 +8,16 @@ import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
 import ddm.handson.akka.Master;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import ddm.handson.akka.messages.CompletionMessage;
+import ddm.handson.akka.messages.RegistrationMessage;
+import ddm.handson.akka.messages.WorkMessage;
 
-import java.io.Serializable;
 
 public class Worker extends AbstractLoggingActor {
     public static final String DEFAULT_NAME = "worker";
 
     public static Props props() {
         return Props.create(Worker.class);
-    }
-
-    @Data @AllArgsConstructor
-    public static class WorkMessage implements Serializable {
-        private static final long serialVersionUID = -7643194361832862395L;
-        private WorkMessage() {}
-        private String content;
     }
 
     private final Cluster cluster = Cluster.get(this.context().system());
@@ -61,11 +54,14 @@ public class Worker extends AbstractLoggingActor {
     }
 
     private void handle(WorkMessage message) {
-        System.out.println("Received work message: " + message.content);
+        System.out.println(this.self().path().name() + " received work message: " + message.content);
+        this.sender().tell(new CompletionMessage(CompletionMessage.status.OK), this.self());
     }
 
     private void register(Member member) {
-        //TODO
-        System.out.println(this.self().path() + " saw a member register at " + member.address());
+        if (member.hasRole(Master.MASTER_ROLE))
+            this.getContext()
+                    .actorSelection(member.address() + "/user/" + Profiler.DEFAULT_NAME)
+                    .tell(new RegistrationMessage(), this.self());
     }
 }
