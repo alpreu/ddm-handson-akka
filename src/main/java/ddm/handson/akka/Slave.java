@@ -1,10 +1,10 @@
 package ddm.handson.akka;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
 import com.typesafe.config.Config;
 import ddm.handson.akka.actors.Worker;
+import ddm.handson.akka.actors.WorkerRegisterer;
 
 public class Slave extends HandsonSystem {
     public static final String SLAVE_ROLE = "slave";
@@ -15,9 +15,14 @@ public class Slave extends HandsonSystem {
 
         Cluster.get(system).registerOnMemberUp(() -> {
             System.out.println("Slave going up because system is ready");
+
+            system.actorOf(WorkerRegisterer.props(workers));
+
             for (int i = 0; i < workers; i++) {
                 system.actorOf(Worker.props(), Worker.DEFAULT_NAME + "_slave_" + i);
             }
+
+
         });
     }
 

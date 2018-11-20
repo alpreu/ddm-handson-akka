@@ -9,7 +9,7 @@ import akka.cluster.Member;
 import akka.cluster.MemberStatus;
 import ddm.handson.akka.Master;
 import ddm.handson.akka.messages.CompletionMessage;
-import ddm.handson.akka.messages.RegistrationMessage;
+import ddm.handson.akka.messages.WorkerRegistrationMessage;
 import ddm.handson.akka.messages.WorkMessage;
 
 
@@ -62,6 +62,6 @@ public class Worker extends AbstractLoggingActor {
         if (member.hasRole(Master.MASTER_ROLE))
             this.getContext()
                     .actorSelection(member.address() + "/user/" + Profiler.DEFAULT_NAME)
-                    .tell(new RegistrationMessage(), this.self());
+                    .tell(new WorkerRegistrationMessage(), this.self());
     }
 }

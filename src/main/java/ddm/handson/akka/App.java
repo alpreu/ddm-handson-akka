@@ -48,7 +48,7 @@ public class App {
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
                 String inputFilename = line.getOptionValue("input");
 
-                Master.start(SYSTEM_NAME,numberOfWorkers, MASTER_HOST, MASTER_PORT);
+                Master.start(SYSTEM_NAME, numberOfWorkers, MASTER_HOST, MASTER_PORT, numberOfSlaves);
             } else if (nodeType.equals(Slave.SLAVE_ROLE)) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
