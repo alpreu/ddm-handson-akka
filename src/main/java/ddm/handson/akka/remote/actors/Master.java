@@ -12,16 +12,13 @@ import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class Master extends AbstractLoggingActor {
-
-    public static class Solve implements Serializable {
-    }
-
+    //region messages
+    /**
+     * Message received when a remote system connects to the master
+     */
     public static class RemoteSystemMessage {
         public final Address remoteAddress;
         public final int numberOfWorkers;
@@ -32,8 +29,20 @@ public class Master extends AbstractLoggingActor {
         }
     }
 
+
+    /**
+     * Instructs the master to start solving the input problem as soon as all actors have connected.
+     */
+    public static class Solve implements Serializable {
+    }
+
+    // Messages for Password Cracking
+
+
+    // Messages for Subset sum
     public static class FindLinearCombinationMessage implements Serializable{ }
 
+    // Messgaes vor longest common substring
     public static class FindLCSMessage implements Serializable { }
 
     public static class LCSMessage implements Serializable {
@@ -47,6 +56,22 @@ public class Master extends AbstractLoggingActor {
             this.lcsLength = lcsLength;
         }
     }
+
+    // Messages for HashMining
+    public static class FindHashesMessage implements Serializable {};
+
+    public static class HashFoundMessage implements Serializable
+    {
+        public final int id;
+        public final String hash;
+
+        public HashFoundMessage(int id, String hash) {
+            this.id = id;
+            this.hash = hash;
+        }
+    }
+    //endregion
+
 
     public static final String DEFAULT_NAME = "master";
 
@@ -89,11 +114,29 @@ public class Master extends AbstractLoggingActor {
         lcsPairs = null;
     }
 
+    public static Props props(ActorRef listener, int numberOfWorkers, int numberOfSlaves, final List<ProblemEntry> problemEntries) {
+        return Props.create(Master.class, listener, numberOfWorkers, numberOfSlaves, problemEntries);
+    }
+
     @Override
     public void preStart() throws Exception {
         super.preStart();
         log().info("Master started");
         Reaper.watchWithDefaultReaper(this);
+    }
+
+    private void stopSelfAndListener() {
+        // Work is done. We don't need the listener anymore
+        //this.listener.tell(new ShutdownMessage(), this.getSelf());
+
+        // Stop self and all child actors by sending a poison pill.
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        log().info("Sending PosionPill to Master");
+        this.getSelf().tell(PoisonPill.getInstance(), this.getSelf());
     }
 
     @Override
@@ -107,8 +150,28 @@ public class Master extends AbstractLoggingActor {
                 .match(Worker.LinearCombinationSolutionMessage.class, this::handle)
                 .match(FindLCSMessage.class, this::handle)
                 .match(LCSMessage.class, this::handle)
+                .match(FindHashesMessage.class, this::handle)
+                .match(HashFoundMessage.class, this::handle)
                 .build();
 
+    }
+
+
+
+
+
+    private void handle(HashFoundMessage message) {
+        log().info(message.hash);
+        // Suche Eintrag
+    }
+
+    private void handle(FindHashesMessage message) {
+        Random rnd = new Random();
+        log().info("Calculating hashes.");
+        for (ActorRef worker : workers)
+        {
+            worker.tell(new Worker.FindHashesMessage(rnd.nextInt(), id, partnerId, ones), self());
+        }
     }
 
     private void handle(Worker.LinearCombinationSolutionMessage message) {
@@ -246,27 +309,7 @@ public class Master extends AbstractLoggingActor {
         // 4. ??
     }
 
-    private boolean hasFinished() {
-        return false;
-    }
 
-    private void stopSelfAndListener() {
-        // Work is done. We don't need the listener anymore
-        //this.listener.tell(new ShutdownMessage(), this.getSelf());
-
-        // Stop self and all child actors by sending a poison pill.
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        log().info("Sending PosionPill to Master");
-        this.getSelf().tell(PoisonPill.getInstance(), this.getSelf());
-    }
-
-    public static Props props(ActorRef listener, int numberOfWorkers, int numberOfSlaves, final List<ProblemEntry> problemEntries) {
-        return Props.create(Master.class, listener, numberOfWorkers, numberOfSlaves, problemEntries);
-    }
 
     private void initLCSPair()
     {
@@ -323,8 +366,8 @@ public class Master extends AbstractLoggingActor {
         }
 
         lcsPairs.add(message);
-        //if (lcsPairs.size() ==  ((problemEntries.size() - 1) * problemEntries.size()) / 2) {
-        if (lcsPairs.size() ==  41) {
+        if (lcsPairs.size() ==  ((problemEntries.size() - 1) * problemEntries.size()) / 2) {
+        //if (lcsPairs.size() ==  41) {
             log().info("LCS solved in {} ms", System.currentTimeMillis() - startTime);
 
             // Partner ausgeben.
@@ -345,6 +388,8 @@ public class Master extends AbstractLoggingActor {
             {
                 log().info("id: {} partner: {}", i + 1, partners[i]);
             }
+
+            self().tell(new FindHashesMessage(), ActorRef.noSender());
 
         }
     }

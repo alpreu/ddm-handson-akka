@@ -13,13 +13,10 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class Worker extends AbstractLoggingActor {
-
+//region messages
     public static class FindLinearCombinationMessage implements Serializable
     {
         public final long prefix;
@@ -73,8 +70,21 @@ public class Worker extends AbstractLoggingActor {
         }
     }
 
+    public static class FindHashesMessage implements Serializable
+    {
+        public final int seed;
+        public final int id;
+        public final int partnerId;
+        public final boolean ones;
 
-
+        public FindHashesMessage(int seed, int id, int partnerId, boolean ones) {
+            this.seed = seed;
+            this.id = id;
+            this.partnerId = partnerId;
+            this.ones = ones;
+        }
+    }
+//endregion
     @Override
     public Receive createReceive() {
         System.out.println("createReceive called.");
@@ -83,8 +93,24 @@ public class Worker extends AbstractLoggingActor {
                 .match(FindPasswordsMessage.class, this::handle)
                 .match(FindLinearCombinationMessage.class, this::handle)
                 .match(FindLCSMessage.class, this::handle)
+                .match(FindHashesMessage.class, this::handle)
                 .matchAny(object -> System.out.println("Unknown message"))
                 .build();
+    }
+
+    private void handle(FindHashesMessage message) {
+        Random rnd = new Random(message.seed);
+
+        final String prefix = message.ones ? "11111" : "00000";
+        String hash;
+        int nonce;
+
+        do {
+            nonce = rnd.nextInt();
+            hash = hash(nonce + message.partnerId);
+        } while (!hash.startsWith(prefix));
+
+        sender().tell(new Master.HashFoundMessage(message.id, hash), self());
     }
 
     private static long compressStack(Stack<Integer> stack)
@@ -115,7 +141,8 @@ public class Worker extends AbstractLoggingActor {
         int sumOnStack = message.initializeStack(selectedIndices);
         sumOnStack = fillStack(selectedIndices, message.passwords, message.prefixLength, sumOnStack, message.sum);
 
-        while (sumOnStack != message.sum && selectedIndices.size() > 1)
+        // TODO: Hier soll die Prefixlength das Abbruchkriterium sein.
+        while (sumOnStack != message.sum && selectedIndices.size() > 1) // TODO: Hier wäre ein break möglich oder wir lösen das Problem mit einem TimeOut // Verwende Prefixlänge
         {
             int index = selectedIndices.pop();
             sumOnStack -= message.passwords[index];
@@ -138,6 +165,13 @@ public class Worker extends AbstractLoggingActor {
         return Props.create(Worker.class);
     }
 
+    private final StringBuffer stringBuffer;
+    public Worker()
+    {
+        stringBuffer = new StringBuffer(512);
+    }
+
+
     @Override
     public void preStart() throws Exception {
         super.preStart();
@@ -155,7 +189,7 @@ public class Worker extends AbstractLoggingActor {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashedBytes = digest.digest(String.valueOf(number).getBytes("UTF-8"));
 
-            StringBuffer stringBuffer = new StringBuffer();
+            stringBuffer.setLength(0);
             for (int i = 0; i < hashedBytes.length; i++) {
                 stringBuffer.append(Integer.toString((hashedBytes[i] & 0xff) + 0x100, 16).substring(1));
             }
@@ -171,6 +205,7 @@ public class Worker extends AbstractLoggingActor {
         this.sender().tell(new TextMessage("42"), this.self());
     }
 
+    // TODO: No break needed. Master will send small packages
     private void handle(FindPasswordsMessage message) {
         HashMap<String, Integer> hashs = new HashMap<>(message.upperBound - message.lowerBound + 1);
         for (int i = message.lowerBound; i <= message.upperBound; ++i) {
@@ -189,10 +224,8 @@ public class Worker extends AbstractLoggingActor {
         this.getSender().tell(new DecryptedPasswordsMessage(results.toArray(new IdPasswordPair[results.size()])), self());
     }
 
-    private void handle(FindLCSMessage message1) {
-
-        FindLCSMessage message = new FindLCSMessage(message1.indexString1, message1.indexString2, "thisisatest", "testing123testing");
-
+    // TODO: Longest common substring verwenden.
+    private void handle(FindLCSMessage message) {
 
         int[][] matrix = new int[message.string1.length() + 1][message.string2.length() + 1];
 
