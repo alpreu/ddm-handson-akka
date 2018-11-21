@@ -73,7 +73,7 @@ public class Master extends AbstractLoggingActor {
         return Props.create(Master.class, numberOfWorkers, numberOfSlaves, problemEntries);
     }
 
-    public Master(final ActorRef listener, int numberOfWorkers, int expectedSlaves, final List<ProblemEntry> problemEntries) {
+    public Master(int numberOfWorkers, int expectedSlaves, final List<ProblemEntry> problemEntries) {
         this.expectedSlaves = expectedSlaves;
         connectedSlaves = 0;
 
@@ -206,20 +206,18 @@ public class Master extends AbstractLoggingActor {
         }
     }
 
-
-
-
-    private void handle(HashFoundMessage message) {
-        log().info(message.hash);
-        // Suche Eintrag
-    }
-
-    private void handle(FindHashesMessage message) {
-        Random rnd = new Random();
-        log().info("Calculating hashes.");
-        for (ActorRef worker : workers)
-        {
-            worker.tell(new Worker.FindHashesMessage(rnd.nextInt(), id, partnerId, ones), self());
+    private void handle(DecryptedPasswordsMessage message) {
+        this.log().info("Passwords received.");
+        for (IdPasswordPair p : message.passwords) {
+            decryptedPasswords[p.id - 1] = p.Password;
+            ++passwordsDecrypted;
+        }
+        if (passwordsDecrypted == problemEntries.size()) {
+            log().info("Passowords cracked in {} ms", System.currentTimeMillis() - startTime);
+            for (int id = 1; id <= problemEntries.size(); ++id) {
+                this.log().info("id: {} pwd: {}", id, decryptedPasswords[id - 1]);
+            }
+            self().tell(new FindLinearCombinationMessage(), ActorRef.noSender());
         }
     }
 
@@ -274,7 +272,19 @@ public class Master extends AbstractLoggingActor {
     }
 
 
+    private void handle(HashFoundMessage message) {
+        log().info(message.hash);
+        // Suche Eintrag
+    }
 
+    private void handle(FindHashesMessage message) {
+        Random rnd = new Random();
+        log().info("Calculating hashes.");
+        for (ActorRef worker : workers)
+        {
+            worker.tell(new Worker.FindHashesMessage(rnd.nextInt(), id, partnerId, ones), self());
+        }
+    }
 
 
     private void handle(Terminated message) {
@@ -286,23 +296,6 @@ public class Master extends AbstractLoggingActor {
             stopSelfAndListener();
         }
     }
-
-    private void handle(DecryptedPasswordsMessage message) {
-        this.log().info("Passwords received.");
-        for (IdPasswordPair p : message.passwords) {
-            decryptedPasswords[p.id - 1] = p.Password;
-            ++passwordsDecrypted;
-        }
-        if (passwordsDecrypted == problemEntries.size()) {
-            log().info("Passowords cracked in {} ms", System.currentTimeMillis() - startTime);
-            for (int id = 1; id <= problemEntries.size(); ++id) {
-                this.log().info("id: {} pwd: {}", id, decryptedPasswords[id - 1]);
-            }
-            self().tell(new FindLinearCombinationMessage(), ActorRef.noSender());
-        }
-    }
-
-
 
 
 

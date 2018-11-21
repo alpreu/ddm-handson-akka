@@ -4,16 +4,12 @@ package ddm.handson.akka.remote.actors;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.Props;
 import ddm.handson.akka.remote.divider.PasswordCracker;
-import ddm.handson.akka.util.IdHashPair;
-import ddm.handson.akka.util.IdPasswordPair;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
 
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Random;
+import java.util.Stack;
 
 public class Worker extends AbstractLoggingActor {
 //region messages
