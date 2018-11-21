@@ -1,6 +1,6 @@
 package ddm.handson.akka.remote.messages;
 
-import ddm.handson.akka.IdPasswordPair;
+import ddm.handson.akka.util.IdPasswordPair;
 
 import java.io.Serializable;
 

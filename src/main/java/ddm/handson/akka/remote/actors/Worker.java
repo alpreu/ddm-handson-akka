@@ -3,9 +3,9 @@ package ddm.handson.akka.remote.actors;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.Props;
-import ddm.handson.akka.IdHashPair;
-import ddm.handson.akka.IdPasswordPair;
-import ddm.handson.akka.TextMessage;
+import ddm.handson.akka.remote.divider.PasswordCracker;
+import ddm.handson.akka.util.IdHashPair;
+import ddm.handson.akka.util.IdPasswordPair;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
 
@@ -89,7 +89,6 @@ public class Worker extends AbstractLoggingActor {
     public Receive createReceive() {
         System.out.println("createReceive called.");
         return receiveBuilder()
-                .match(TextMessage.class, this::handle)
                 .match(FindPasswordsMessage.class, this::handle)
                 .match(FindLinearCombinationMessage.class, this::handle)
                 .match(FindLCSMessage.class, this::handle)
@@ -165,12 +164,6 @@ public class Worker extends AbstractLoggingActor {
         return Props.create(Worker.class);
     }
 
-    private final StringBuffer stringBuffer;
-    public Worker()
-    {
-        stringBuffer = new StringBuffer(512);
-    }
-
 
     @Override
     public void preStart() throws Exception {
@@ -184,43 +177,8 @@ public class Worker extends AbstractLoggingActor {
         log().info("Worker {} shuttig down", self());
     }
 
-    private String hash(int number) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = digest.digest(String.valueOf(number).getBytes("UTF-8"));
-
-            stringBuffer.setLength(0);
-            for (int i = 0; i < hashedBytes.length; i++) {
-                stringBuffer.append(Integer.toString((hashedBytes[i] & 0xff) + 0x100, 16).substring(1));
-            }
-            return stringBuffer.toString();
-        }
-        catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    private void handle(TextMessage message) {
-        System.out.println("Sender says: " + message.getMessage());
-        this.sender().tell(new TextMessage("42"), this.self());
-    }
-
     private void handle(FindPasswordsMessage message) {
-        HashMap<String, Integer> hashes = new HashMap<>(message.upperBound - message.lowerBound + 1);
-        for (int i = message.lowerBound; i <= message.upperBound; ++i) {
-            hashes.put(hash(i), i);
-        }
-
-        List<IdPasswordPair> results = new ArrayList<>(message.hashes.length);
-
-        for (IdHashPair pair : message.hashes) {
-            int password = hashes.getOrDefault(pair.hash, Integer.MAX_VALUE);
-            if (password < Integer.MAX_VALUE) {
-                results.add(new IdPasswordPair(pair.id, password));
-            }
-        }
-
-        this.getSender().tell(new DecryptedPasswordsMessage(results.toArray(new IdPasswordPair[results.size()])), self());
+        this.getSender().tell(new DecryptedPasswordsMessage(PasswordCracker.FindPasswords(message)), self());
     }
 
     // TODO: Longest common substring verwenden.

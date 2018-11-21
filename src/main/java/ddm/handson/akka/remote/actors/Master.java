@@ -6,7 +6,7 @@ import akka.routing.ActorRefRoutee;
 import akka.routing.RoundRobinRoutingLogic;
 import akka.routing.Routee;
 import akka.routing.Router;
-import ddm.handson.akka.IdPasswordPair;
+import ddm.handson.akka.util.IdPasswordPair;
 import ddm.handson.akka.ProblemEntry;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;

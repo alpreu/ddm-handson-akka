@@ -1,9 +1,14 @@
-package ddm.handson.akka.divider;
+package ddm.handson.akka.remote.divider;
 
-import ddm.handson.akka.IdHashPair;
-import ddm.handson.akka.IdPasswordPair;
+import ddm.handson.akka.util.IdHashPair;
+import ddm.handson.akka.util.IdPasswordPair;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
+import ddm.handson.akka.util.Utils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class PasswordCracker implements ProblemDivider {
 
@@ -33,6 +38,8 @@ public class PasswordCracker implements ProblemDivider {
     public Object getNextSubproblem() {
         if (currentLowerBound == MAX_NUMBER)
             return null;
+        if (done())
+            return null;
 
         final int upperBound = Math.min(currentLowerBound + stride_size, MAX_NUMBER) - 1;
         Object message = new FindPasswordsMessage(currentLowerBound, upperBound, hashPairs);
@@ -50,10 +57,28 @@ public class PasswordCracker implements ProblemDivider {
             return;
 
         for (IdPasswordPair p : message.passwords) {
-            if (passwords[p.id - 1] > 0) {
+            if (passwords[p.id - 1] == 0) {
                 passwords[p.id - 1] = p.password;
                 ++passwordCount;
             }
         }
+    }
+
+    public static IdPasswordPair[] FindPasswords(FindPasswordsMessage message)
+    {
+        HashMap<String, Integer> hashes = new HashMap<>(message.upperBound - message.lowerBound + 1);
+        for (int i = message.lowerBound; i <= message.upperBound; ++i) {
+            hashes.put(Utils.hash(i), i);
+        }
+
+        List<IdPasswordPair> results = new ArrayList<>(message.hashes.length);
+
+        for (IdHashPair pair : message.hashes) {
+            int password = hashes.getOrDefault(pair.hash, Integer.MAX_VALUE);
+            if (password < Integer.MAX_VALUE) {
+                results.add(new IdPasswordPair(pair.id, password));
+            }
+        }
+        return results.toArray(new IdPasswordPair[results.size()]);
     }
 }

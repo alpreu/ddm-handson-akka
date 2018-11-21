@@ -1,4 +1,4 @@
-package ddm.handson.akka.divider;
+package ddm.handson.akka.remote.divider;
 
 public interface ProblemDivider {
     Object getNextSubproblem();
