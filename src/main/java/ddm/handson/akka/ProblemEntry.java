@@ -6,33 +6,17 @@ import java.util.List;
 
 public class ProblemEntry implements Serializable {
 
-    private byte id;
-    private String name;
-    private String password;
-    private String gene;
+    public final int id;
+    public final String name;
+    public final String password;
+    public final String gene;
 
-    public ProblemEntry(byte id, String name, String password, String gene)
+    public ProblemEntry(int id, String name, String password, String gene)
     {
         this.id = id;
         this.name = name;
         this.password = password;
         this.gene = gene;
-    }
-
-    public byte getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getGene() {
-        return gene;
     }
 
     public static ProblemEntry fromCSVString(String str)
@@ -57,5 +41,14 @@ public class ProblemEntry implements Serializable {
             line = br.readLine();
         }
         return problemEntries;
+    }
+
+    public static int[] getIds(List<ProblemEntry> entries)
+    {
+        int[] ids = new int[entries.size()];
+        int i = 0;
+        for (ProblemEntry entry : entries)
+            ids[i++] = entry.id;
+        return ids;
     }
 }

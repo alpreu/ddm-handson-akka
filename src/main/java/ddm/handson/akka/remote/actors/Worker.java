@@ -3,8 +3,8 @@ package ddm.handson.akka.remote.actors;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.Props;
+import ddm.handson.akka.IdHashPair;
 import ddm.handson.akka.IdPasswordPair;
-import ddm.handson.akka.ProblemEntry;
 import ddm.handson.akka.TextMessage;
 import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
@@ -205,19 +205,18 @@ public class Worker extends AbstractLoggingActor {
         this.sender().tell(new TextMessage("42"), this.self());
     }
 
-    // TODO: No break needed. Master will send small packages
     private void handle(FindPasswordsMessage message) {
-        HashMap<String, Integer> hashs = new HashMap<>(message.upperBound - message.lowerBound + 1);
+        HashMap<String, Integer> hashes = new HashMap<>(message.upperBound - message.lowerBound + 1);
         for (int i = message.lowerBound; i <= message.upperBound; ++i) {
-            hashs.put(hash(i), i);
+            hashes.put(hash(i), i);
         }
 
-        List<IdPasswordPair> results = new ArrayList<>(42);
+        List<IdPasswordPair> results = new ArrayList<>(message.hashes.length);
 
-        for (ProblemEntry e : message.problemEntries) {
-            int password = hashs.getOrDefault(e.getPassword(), Integer.MAX_VALUE);
+        for (IdHashPair pair : message.hashes) {
+            int password = hashes.getOrDefault(pair.hash, Integer.MAX_VALUE);
             if (password < Integer.MAX_VALUE) {
-                results.add(new IdPasswordPair(e.getId(), password));
+                results.add(new IdPasswordPair(pair.id, password));
             }
         }
 
