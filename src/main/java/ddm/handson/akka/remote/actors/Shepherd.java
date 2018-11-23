@@ -44,6 +44,7 @@ public class Shepherd extends AbstractLoggingActor {
     }
 
     private void handle(ShutdownMessage shutdownMessage) {
+        log().warning("{} received shutdown message.", DEFAULT_NAME);
         for (ActorRef a : slaves) {
             a.tell(new ShutdownMessage(), self());
         }
@@ -59,6 +60,18 @@ public class Shepherd extends AbstractLoggingActor {
     public void preStart() throws Exception {
         super.preStart();
         Reaper.watchWithDefaultReaper(this);
+    }
+
+    @Override
+    public void postStop() throws Exception {
+        super.postStop();
+
+        // Stop all slaves that connected to this Shepherd
+        for (ActorRef slave : this.slaves)
+            slave.tell(PoisonPill.getInstance(), this.getSelf());
+
+        // Log the stop event
+        this.log().info("Stopped {}.", this.getSelf());
     }
 
     private void handle(SubscriptionMessage message) {

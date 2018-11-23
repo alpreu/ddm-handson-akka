@@ -129,6 +129,7 @@ public class Hasher implements ProblemDivider {
                 hash = Utils.hash(rnd.nextInt());
             }
         }
+
         return hash;
     }
 

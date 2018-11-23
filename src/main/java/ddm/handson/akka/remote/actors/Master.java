@@ -67,6 +67,14 @@ public class Master extends AbstractLoggingActor {
     }
 
     @Override
+    public void postStop() throws Exception {
+        super.postStop();
+        log().warning("Master stopped.");
+        ActorSelection defaultShepherd = getContext().getSystem().actorSelection("/user/" + Shepherd.DEFAULT_NAME);
+        defaultShepherd.tell(new ShutdownMessage(), self());
+    }
+
+    @Override
     public AbstractActor.Receive createReceive() {
         return receiveBuilder()
                 .match(RemoteSystemMessage.class, this::handle)
@@ -76,10 +84,12 @@ public class Master extends AbstractLoggingActor {
                 .match(FoundLCSMessage.class, this::handle)
                 .match(FoundLinearCombinationMessage.class, this::handle)
                 .match(FoundHashMessage.class, this::handle)
+                .match(ShutdownMessage.class, this::handle)
                 .match(Terminated.class, this::handle)
                 .build();
 
     }
+
 
     private void handle(RemoteSystemMessage message) {
         if (expectedSlaves == connectedSlaves) {
@@ -176,10 +186,15 @@ public class Master extends AbstractLoggingActor {
 
         if (nextMessage != null)
             router.route(nextMessage, self());
-        else
+        else if (allTasksDone())
         {
             printResultsAndShutdown();
         }
+    }
+
+    private boolean allTasksDone()
+    {
+        return lcFinder != null && lcFinder.done() && hasher.done() && lcsCalculator.done() && passwordCracker.done();
     }
 
     private void handle(FoundDecryptedPasswordsMessage message) {
@@ -237,13 +252,21 @@ public class Master extends AbstractLoggingActor {
     }
 
     private void handle(Terminated message) {
-        this.log().info("Termination request received.");
+        // Find the sender of this message
+        final ActorRef sender = this.getSender();
+        this.log().warning("{} has terminated.", sender);
+        workers.remove(sender);
+        router.removeRoutee(sender);
+    }
+
+    private void handle(ShutdownMessage message) {
+        this.log().warning("Ignoring shutdown request.");
     }
 
     private void printResultsAndShutdown() {
         printResultsAndShutdown = true;
         printResults();
-        log().info("Sending PosionPill to Master");
+        log().info("All work done. Master is terminating itself by sending a PoisonPill.");
         self().tell(PoisonPill.getInstance(), this.getSelf());
     }
 

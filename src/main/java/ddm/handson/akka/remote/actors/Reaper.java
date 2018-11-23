@@ -1,7 +1,6 @@
 package ddm.handson.akka.remote.actors;
 
 import akka.actor.*;
-import akka.japi.pf.ReceiveBuilder;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -44,7 +43,6 @@ public class Reaper extends AbstractLoggingActor {
         final ActorRef sender = this.getSender();
 
         if (watchees.remove(sender)) {
-            this.getContext().unwatch(sender);
             this.log().info("{} has terminated", sender);
 
             if (watchees.isEmpty()) {
