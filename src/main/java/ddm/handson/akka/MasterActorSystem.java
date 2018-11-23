@@ -6,6 +6,7 @@ import com.typesafe.config.Config;
 import ddm.handson.akka.remote.actors.Master;
 import ddm.handson.akka.remote.actors.Reaper;
 import ddm.handson.akka.remote.actors.Shepherd;
+import ddm.handson.akka.util.ProblemEntry;
 import ddm.handson.akka.util.Utils;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;

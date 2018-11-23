@@ -1,7 +1,7 @@
 package ddm.handson.akka.remote.divider;
 
 import ddm.handson.akka.remote.messages.FindLinearCombinationMessage;
-import ddm.handson.akka.remote.messages.LinearCombinationFoundMessage;
+import ddm.handson.akka.remote.messages.FoundLinearCombinationMessage;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,6 +18,9 @@ public class LinearCombinationFinder implements ProblemDivider {
 
     private long prefix;
 
+    private long startTime;
+    private long endTime;
+
     public LinearCombinationFinder(int[] passwords) {
         originalPasswordArray = passwords;
         this.passwords = passwords.clone();
@@ -31,10 +34,15 @@ public class LinearCombinationFinder implements ProblemDivider {
 
         prefixes = new int[passwords.length];
         prefix = -2;
+
+        startTime = Long.MAX_VALUE;
     }
 
     @Override
     public Object getNextSubproblem() {
+        if (startTime == Long.MAX_VALUE)
+            startTime = System.currentTimeMillis();
+
         if (done())
             return null;
 
@@ -60,7 +68,7 @@ public class LinearCombinationFinder implements ProblemDivider {
         return done;
     }
 
-    public void handle(LinearCombinationFoundMessage message) {
+    public void handle(FoundLinearCombinationMessage message) {
         if (done())
             return;
 
@@ -78,8 +86,8 @@ public class LinearCombinationFinder implements ProblemDivider {
         for (int i = 0; i < message.solution.length; ++i) {
             prefixes[pwdMap.get(message.solution[i])] = 1;
         }
-
         done = true;
+        endTime = System.currentTimeMillis();
     }
 
     private static int fillStack(Stack<Integer> stack, int[] elements, int startIndex, int sumOnStack, int maxValue)
@@ -136,5 +144,13 @@ public class LinearCombinationFinder implements ProblemDivider {
         }
 
         return new int[0];
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
     }
 }

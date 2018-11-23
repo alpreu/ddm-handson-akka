@@ -2,7 +2,7 @@ package ddm.handson.akka.remote.divider;
 
 import ddm.handson.akka.util.IdHashPair;
 import ddm.handson.akka.util.IdPasswordPair;
-import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
+import ddm.handson.akka.remote.messages.FoundDecryptedPasswordsMessage;
 import ddm.handson.akka.remote.messages.FindPasswordsMessage;
 import ddm.handson.akka.util.Utils;
 
@@ -21,6 +21,9 @@ public class PasswordCracker implements ProblemDivider {
     public final int[] passwords;
     private int passwordCount;
 
+    private long startTime;
+    private long endTime;
+
     public PasswordCracker(int numberOfWorkers, int[] ids, String[] hashes)
     {
         currentLowerBound = 100000;
@@ -32,10 +35,15 @@ public class PasswordCracker implements ProblemDivider {
         for (int i = 0; i < ids.length; ++i) {
             hashPairs[i] = new IdHashPair(ids[i], hashes[i]);
         }
+
+        startTime = Long.MAX_VALUE;
     }
 
     @Override
     public Object getNextSubproblem() {
+        if (startTime == Long.MAX_VALUE)
+            startTime = System.currentTimeMillis();
+
         if (currentLowerBound == MAX_NUMBER)
             return null;
         if (done())
@@ -52,7 +60,7 @@ public class PasswordCracker implements ProblemDivider {
         return passwordCount == passwords.length;
     }
 
-    public void handle(DecryptedPasswordsMessage message) {
+    public void handle(FoundDecryptedPasswordsMessage message) {
         if (done())
             return;
 
@@ -62,6 +70,9 @@ public class PasswordCracker implements ProblemDivider {
                 ++passwordCount;
             }
         }
+
+        if (done())
+            endTime = System.currentTimeMillis();
     }
 
     public static IdPasswordPair[] FindPasswords(FindPasswordsMessage message)
@@ -80,5 +91,13 @@ public class PasswordCracker implements ProblemDivider {
             }
         }
         return results.toArray(new IdPasswordPair[results.size()]);
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
     }
 }

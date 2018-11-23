@@ -1,4 +1,4 @@
-package ddm.handson.akka;
+package ddm.handson.akka.util;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -50,5 +50,23 @@ public class ProblemEntry implements Serializable {
         for (ProblemEntry entry : entries)
             ids[i++] = entry.id;
         return ids;
+    }
+
+    public static String[] getPasswords(List<ProblemEntry> entries)
+    {
+        String[] passwords = new String[entries.size()];
+        int i = 0;
+        for (ProblemEntry entry : entries)
+            passwords[i++] = entry.password;
+        return passwords;
+    }
+
+    public static String[] getGeneSequences(List<ProblemEntry> entries)
+    {
+        String[] geneSequences = new String[entries.size()];
+        int i = 0;
+        for (ProblemEntry entry : entries)
+            geneSequences[i++] = entry.gene;
+        return geneSequences;
     }
 }

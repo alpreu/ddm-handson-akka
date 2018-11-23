@@ -2,45 +2,33 @@ package ddm.handson.akka.remote.actors;
 
 import akka.actor.*;
 import akka.remote.RemoteScope;
-import akka.routing.ActorRefRoutee;
-import akka.routing.RoundRobinRoutingLogic;
-import akka.routing.Routee;
-import akka.routing.Router;
-import ddm.handson.akka.util.IdPasswordPair;
-import ddm.handson.akka.ProblemEntry;
-import ddm.handson.akka.remote.messages.DecryptedPasswordsMessage;
-import ddm.handson.akka.remote.messages.FindPasswordsMessage;
+import akka.routing.*;
+import ddm.handson.akka.remote.divider.*;
+import ddm.handson.akka.remote.messages.*;
+import ddm.handson.akka.util.ProblemEntry;
 
 import java.io.Serializable;
 import java.util.*;
 
 public class Master extends AbstractLoggingActor {
-    //region messages
-
-    // Messages for HashMining
-    public static class FindHashesMessage implements Serializable {};
-
-
-    //endregion
-
 
     public static final String DEFAULT_NAME = "master";
-
-    private final List<ProblemEntry> problemEntries;
 
     private final int expectedSlaves;
     private int connectedSlaves;
     private final HashSet<ActorRef> workers;
 
-    private int passwordsDecrypted;
-    private final int[] decryptedPasswords;
+    private final List<ProblemEntry> problemEntries;
     private long startTime;
-
-
+    private long endTime;
     private Router router;
-
-    private int[] lcsPair;
-    private List<LCSMessage> lcsPairs;
+    private PasswordCracker passwordCracker;
+    private LCSCalculator lcsCalculator;
+    private Hasher hasher;
+    private LinearCombinationFinder lcFinder;
+    private int lcMessagesInProgress;
+    private int maxLCMessagesInProgress;
+    private boolean printResultsAndShutdown;
 
     public static Props props(int numberOfWorkers, int numberOfSlaves, final List<ProblemEntry> problemEntries) {
         return Props.create(Master.class, numberOfWorkers, numberOfSlaves, problemEntries);
@@ -57,12 +45,12 @@ public class Master extends AbstractLoggingActor {
             addWorker(worker);
         }
 
-        // Set up variables
         this.problemEntries = problemEntries;
-        decryptedPasswords = new int[problemEntries.size()];
-        passwordsDecrypted = 0;
         router = null;
-        lcsPairs = null;
+        lcFinder = null;
+        lcMessagesInProgress = 0;
+        maxLCMessagesInProgress = 0;
+        printResultsAndShutdown = false;
     }
 
     private void addWorker(final ActorRef worker)
@@ -78,46 +66,18 @@ public class Master extends AbstractLoggingActor {
         Reaper.watchWithDefaultReaper(this);
     }
 
-    private void stopSelf() {
-        try {
-            // We want to make sure everything gets printed.
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        log().info("Sending PosionPill to Master");
-        this.getSelf().tell(PoisonPill.getInstance(), this.getSelf());
-    }
-
     @Override
     public AbstractActor.Receive createReceive() {
         return receiveBuilder()
-                .match(Terminated.class, this::handle)
-                .match(Solve.class, this::handle)
-                .match(DecryptedPasswordsMessage.class, this::handle)
                 .match(RemoteSystemMessage.class, this::handle)
-                .match(FindLinearCombinationMessage.class, this::handle)
-                .match(Worker.LinearCombinationSolutionMessage.class, this::handle)
-                .match(FindLCSMessage.class, this::handle)
-                .match(LCSMessage.class, this::handle)
-                .match(FindHashesMessage.class, this::handle)
-                .match(HashFoundMessage.class, this::handle)
+                .match(Solve.class, this::handle)
+                .match(FoundDecryptedPasswordsMessage.class, this::handle)
+                .match(FoundLCSMessage.class, this::handle)
+                .match(FoundLinearCombinationMessage.class, this::handle)
+                .match(FoundHashMessage.class, this::handle)
+                .match(Terminated.class, this::handle)
                 .build();
 
-    }
-
-    //region remote system message
-    /**
-     * Message received when a remote system connects to the master
-     */
-    public static class RemoteSystemMessage {
-        public final Address remoteAddress;
-        public final int numberOfWorkers;
-
-        public RemoteSystemMessage(Address remoteAddress, int numberOfWorkers) {
-            this.remoteAddress = remoteAddress;
-            this.numberOfWorkers = numberOfWorkers;
-        }
     }
 
     private void handle(RemoteSystemMessage message) {
@@ -145,11 +105,10 @@ public class Master extends AbstractLoggingActor {
             log().info("Waiting for {} more slave(s).", expectedSlaves - connectedSlaves);
         }
     }
-    //endregion
 
     /**
      * Starting message of the pipeline
-     * Instructs the master to start solving the input problem. All actors have connected. Otherwise this message
+     * Instructs the master to start solving the input problem. All actors have to be connected. Otherwise this message
      * will have to be resent.
      */
     public static class Solve implements Serializable { }
@@ -157,208 +116,154 @@ public class Master extends AbstractLoggingActor {
     private void handle(Solve message) {
 
         if (expectedSlaves != connectedSlaves) {
-            log().info("Waiting for {} slave(s)",
+            log().info("Cannot start problem solving pipeline yet: Waiting for {} slave(s) to connect.",
                     expectedSlaves - connectedSlaves);
             return;
         }
 
-        List<Routee> routees = new ArrayList<>(workers.size());
+        final List<Routee> routees = new ArrayList<>(workers.size());
 
         for (ActorRef a : workers) {
             routees.add(new ActorRefRoutee(a));
         }
 
-        router = new Router(new RoundRobinRoutingLogic(), routees);
+        router = new Router(new SmallestMailboxRoutingLogic(), routees);
+
+        passwordCracker = new PasswordCracker(
+                workers.size(),
+                ProblemEntry.getIds(problemEntries),
+                ProblemEntry.getPasswords(problemEntries));
+
+        lcsCalculator = new LCSCalculator(ProblemEntry.getGeneSequences(problemEntries));
+
+        hasher = new Hasher(problemEntries.size());
 
         startTime = System.currentTimeMillis();
-        final int maxNumber = 1000000;
-        final int stride_size = Math.max(maxNumber / workers.size(), 1);
 
-        for (int i = 0; i < maxNumber; i += stride_size) {
-            router.route(new FindPasswordsMessage(i, Math.min(i + stride_size, maxNumber) - 1, problemEntries), self());
+        for (int i = 0; i < 2 * workers.size(); ++i) {
+            self().tell(new SolveNextSubproblemMessage(), self());
         }
     }
 
-    private void handle(DecryptedPasswordsMessage message) {
-        this.log().info("Passwords received.");
-        for (IdPasswordPair p : message.passwords) {
-            decryptedPasswords[p.id - 1] = p.Password;
-            ++passwordsDecrypted;
-        }
-        if (passwordsDecrypted == problemEntries.size()) {
-            log().info("Passowords cracked in {} ms", System.currentTimeMillis() - startTime);
-            for (int id = 1; id <= problemEntries.size(); ++id) {
-                this.log().info("id: {} pwd: {}", id, decryptedPasswords[id - 1]);
-            }
-            self().tell(new FindLinearCombinationMessage(), ActorRef.noSender());
-        }
-    }
+    private void handle(SolveNextSubproblemMessage message) {
 
-    private void handle(FindLinearCombinationMessage message) {
-        this.log().info("Solving Subset Sum");
-        startTime = System.currentTimeMillis();
-
-        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
-        Arrays.sort(pwds);
-
-        int sum = 0;
-        for ( int i : pwds)
-            sum += i;
-
-        sum /= 2;
-
-        for (int i = 0; i < workers.size(); ++i)
-        {
-            router.route(new Worker.FindLinearCombinationMessage(i, (byte)Math.ceil(Math.log(i)), sum, pwds), self());
-        }
-    }
-
-    private void handle(Worker.LinearCombinationSolutionMessage message) {
-        if (message.solution == -1)
+        if (printResultsAndShutdown)
             return;
 
-        this.log().info("Subset Sum solved in {} ms.", System.currentTimeMillis() - startTime);
-
-        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
-        Arrays.sort(pwds);
-
-        for (int i = 0; i < decryptedPasswords.length; ++i) {
-            int posInPwds = indexOf(pwds, decryptedPasswords[i]);
-            if ((message.solution & (1l << posInPwds)) != 0) {
-                this.log().info("id: {} prefix: 1", i + 1);
-            }
-            else
-                this.log().info("id: {} prefix: -1", i + 1);
-        }
-
-        self().tell(new FindLCSMessage(), ActorRef.noSender());
-    }
-    private static int indexOf(int[] array, int value)
-    {
-        for (int i = 0; i < array.length; ++i)
+        Object nextMessage = null;
+        if (lcMessagesInProgress < maxLCMessagesInProgress)
         {
-            if (array[i] == value)
-                return i;
+            nextMessage = lcFinder.getNextSubproblem();
+            if (nextMessage != null)
+                ++lcMessagesInProgress;
         }
 
-        return -1;
-    }
+        if (nextMessage == null)
+            nextMessage = passwordCracker.getNextSubproblem();
 
+        if (nextMessage == null)
+            nextMessage = lcsCalculator.getNextSubproblem();
 
+        if (nextMessage == null)
+            nextMessage = hasher.getNextSubproblem();
 
+        if (nextMessage == null && lcFinder != null && !lcFinder.done()) {
+            nextMessage = lcFinder.getNextSubproblem();
+            if (nextMessage != null)
+                ++lcMessagesInProgress;
+        }
 
-    private void handle(HashFoundMessage message) {
-        log().info(message.hash);
-        // Suche Eintrag
-    }
-
-    private void handle(FindHashesMessage message) {
-        Random rnd = new Random();
-        log().info("Calculating hashes.");
-        for (ActorRef worker : workers)
+        if (nextMessage != null)
+            router.route(nextMessage, self());
+        else
         {
-            worker.tell(new Worker.FindHashesMessage(rnd.nextInt(), id, partnerId, ones), self());
+            printResultsAndShutdown();
         }
     }
 
+    private void handle(FoundDecryptedPasswordsMessage message) {
+        if (printResultsAndShutdown)
+            return;
+
+        this.log().info("Decrypted passwords received.");
+        passwordCracker.handle(message);
+
+        if (passwordCracker.done() && lcFinder == null) {
+            lcFinder = new LinearCombinationFinder(passwordCracker.passwords);
+            maxLCMessagesInProgress = 1;
+        }
+
+        self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
+    }
+
+    private void handle(FoundHashMessage message) {
+        if (printResultsAndShutdown)
+            return;
+
+        this.log().info("Hash received.");
+        hasher.handle(message);
+
+        self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
+    }
+
+    private void handle(FoundLCSMessage message) {
+        if (printResultsAndShutdown)
+            return;
+
+        this.log().info("Longest common substring received.");
+        lcsCalculator.handle(message);
+
+        self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
+    }
+
+    private void handle(FoundLinearCombinationMessage message) {
+        if (printResultsAndShutdown)
+            return;
+
+        this.log().info("Linear combination received. (Timeout is possible.)");
+
+        lcFinder.handle(message);
+        --lcMessagesInProgress;
+
+        if (lcFinder.done() && !hasher.isPrefixesSet()) {
+            hasher.setPrefixes(lcFinder.prefixes);
+            maxLCMessagesInProgress = 0;
+        }
+
+        self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
+    }
 
     private void handle(Terminated message) {
-        final ActorRef sender = this.getSender();
-        workers.remove(sender);
-        this.log().warning("Worker {} terminated.", sender);
+        this.log().info("Termination request received.");
+    }
 
-        if (hasFinished()) {
-            stopSelfAndListener();
+    private void printResultsAndShutdown() {
+        printResultsAndShutdown = true;
+        printResults();
+        log().info("Sending PosionPill to Master");
+        self().tell(PoisonPill.getInstance(), this.getSelf());
+    }
+
+    private void printResults() {
+        endTime = System.currentTimeMillis();
+
+        System.out.println();
+        System.out.println("ID;Name;Password;Prefix;Partner;Hash");
+        for (int i = 0; i < problemEntries.size(); ++i) {
+            System.out.println(String.format("%d;%s;%d;%d;%s",
+                    problemEntries.get(i).id,
+                    problemEntries.get(i).name,
+                    passwordCracker.passwords[i],
+                    lcFinder.prefixes[i],
+                    lcsCalculator.partnerIds[i],
+                    hasher.hashes[i]));
         }
+        System.out.println();
+        System.out.println("Runtime password cracking [ms]: " + (passwordCracker.getEndTime() - passwordCracker.getStartTime()));
+        System.out.println("Runtime linear combination [ms]: " + (lcFinder.getEndTime() - lcFinder.getStartTime()));
+        System.out.println("Runtime longest common substring [ms]: " + (lcsCalculator.getEndTime() - lcsCalculator.getStartTime()));
+        System.out.println("Runtime hash mining [ms]: " + (hasher.getEndTime() - hasher.getStartTime()));
+        System.out.println("Total runtime [ms]: " + (endTime - startTime));
+        System.out.println();
     }
-
-
-
-    private void initLCSPair()
-    {
-        lcsPair = new int[]{0, 0};
-    }
-
-    private void nextLCSPair()
-    {
-        ++lcsPair[1];
-        if (lcsPair[1] >= problemEntries.size()) {
-            ++lcsPair[0];
-            lcsPair[1] = lcsPair[0] + 1;
-        }
-
-        if (lcsPair[0] == lcsPair[1]){
-            nextLCSPair();
-        }
-    }
-
-    private boolean pastLastPair()
-    {
-        return lcsPair[0] >= problemEntries.size() - 1;
-    }
-
-    private Worker.FindLCSMessage createFindLCSMessage(int indexString1, int indexString2) {
-        return new Worker.FindLCSMessage(indexString1, indexString2, problemEntries.get(indexString1).getGene(),
-                problemEntries.get(indexString2).getGene());
-    }
-
-    private void handle(FindLCSMessage message) {
-        startTime = System.currentTimeMillis();
-        log().info("Solving LCS");
-        initLCSPair();
-        lcsPairs = new ArrayList<>(((problemEntries.size() - 1) * problemEntries.size()) / 2);
-
-        for (int i = 0; i < workers.size(); ++i) {
-            nextLCSPair();
-
-            if (pastLastPair())
-                break;
-
-            router.route(createFindLCSMessage(lcsPair[0], lcsPair[1]), self());
-        }
-
-    }
-
-    private void handle(LCSMessage message) {
-
-        nextLCSPair();
-        if (!pastLastPair())
-        {
-            //log().info("Solving pair ({}, {})", lcsPair[0], lcsPair[1]);
-            sender().tell(createFindLCSMessage(lcsPair[0], lcsPair[1]), self());
-        }
-
-        lcsPairs.add(message);
-        if (lcsPairs.size() ==  ((problemEntries.size() - 1) * problemEntries.size()) / 2) {
-        //if (lcsPairs.size() ==  41) {
-            log().info("LCS solved in {} ms", System.currentTimeMillis() - startTime);
-
-            // Partner ausgeben.
-            int[] partners = new int[problemEntries.size()];
-            int[] lcs = new int[problemEntries.size()];
-
-            for (LCSMessage m : lcsPairs)
-            {
-                if (m.lcsLength > lcs[m.indexString1]) {
-                    lcs[m.indexString1] = m.lcsLength;
-                    lcs[m.indexString2] = m.lcsLength;
-                    partners[m.indexString1] = m.indexString2;
-                    partners[m.indexString2] = m.indexString1;
-                }
-            }
-            log().info("Printing Partners: ");
-            for (int i = 0; i < partners.length; ++i)
-            {
-                log().info("id: {} partner: {}", i + 1, partners[i]);
-            }
-
-            self().tell(new FindHashesMessage(), ActorRef.noSender());
-
-        }
-    }
-
-
-
-
-
 }

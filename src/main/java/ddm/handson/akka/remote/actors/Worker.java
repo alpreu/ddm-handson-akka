@@ -9,7 +9,6 @@ import ddm.handson.akka.remote.divider.PasswordCracker;
 import ddm.handson.akka.remote.messages.*;
 import ddm.handson.akka.util.Utils;
 
-import java.io.Serializable;
 import java.util.Random;
 
 public class Worker extends AbstractLoggingActor {
@@ -47,7 +46,7 @@ public class Worker extends AbstractLoggingActor {
 
     private void handle(FindLinearCombinationMessage message) {
         final int[] solution = LinearCombinationFinder.handle(message);
-        sender().tell(new LinearCombinationFoundMessage(solution), self());
+        sender().tell(new FoundLinearCombinationMessage(solution), self());
     }
 
     public static Props props()
@@ -69,11 +68,11 @@ public class Worker extends AbstractLoggingActor {
     }
 
     private void handle(FindPasswordsMessage message) {
-        this.getSender().tell(new DecryptedPasswordsMessage(PasswordCracker.FindPasswords(message)), self());
+        this.getSender().tell(new FoundDecryptedPasswordsMessage(PasswordCracker.FindPasswords(message)), self());
     }
 
     private void handle(FindLCSMessage message) {
         int max = LCSCalculator.CalcLCS(message);
-        sender().tell(new LCSFoundMessage(message.indexString1, message.indexString2, max), self());
+        sender().tell(new FoundLCSMessage(message.indexString1, message.indexString2, max), self());
     }
 }

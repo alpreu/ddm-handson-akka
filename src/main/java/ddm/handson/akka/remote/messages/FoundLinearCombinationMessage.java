@@ -2,10 +2,10 @@ package ddm.handson.akka.remote.messages;
 
 import java.io.Serializable;
 
-public class LinearCombinationFoundMessage implements Serializable {
+public class FoundLinearCombinationMessage implements Serializable {
     public final int[] solution;
 
-    public LinearCombinationFoundMessage(int[] solution) {
+    public FoundLinearCombinationMessage(int[] solution) {
         this.solution = solution;
     }
 }

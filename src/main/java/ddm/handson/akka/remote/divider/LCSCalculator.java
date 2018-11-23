@@ -1,7 +1,7 @@
 package ddm.handson.akka.remote.divider;
 
 import ddm.handson.akka.remote.messages.FindLCSMessage;
-import ddm.handson.akka.remote.messages.LCSFoundMessage;
+import ddm.handson.akka.remote.messages.FoundLCSMessage;
 
 import java.util.*;
 
@@ -46,6 +46,9 @@ public class LCSCalculator implements ProblemDivider {
     private final int pairCount;
     private HashSet<LCSPair> lcsPairs;
 
+    private long startTime;
+    private long endTime;
+
     public LCSCalculator(String[] strings) {
         this.strings = strings;
         indexString1 = 0;
@@ -55,11 +58,15 @@ public class LCSCalculator implements ProblemDivider {
         Arrays.fill(partnerIds, -1);
         pairCount = ((strings.length - 1) * strings.length) / 2;
         lcsPairs = new HashSet<>(pairCount);
+
+        startTime = Long.MAX_VALUE;
     }
 
 
     @Override
     public Object getNextSubproblem() {
+        if (startTime == Long.MAX_VALUE)
+            startTime = System.currentTimeMillis();
 
         if (done())
             return null;
@@ -82,13 +89,14 @@ public class LCSCalculator implements ProblemDivider {
         return lcsPairs.size() == pairCount;
     }
 
-    public void handle(LCSFoundMessage message) {
+    public void handle(FoundLCSMessage message) {
         if (done())
             return;
 
         lcsPairs.add(new LCSPair(message.indexString1, message.indexString1, message.lcsLength));
 
         if (done()) {
+            endTime = System.currentTimeMillis();
             final int lcs[] = new int[strings.length];
             lcsPairs.stream().forEach((item) -> {
                 if (item.lcs > lcs[item.indexString1]) {
@@ -114,5 +122,13 @@ public class LCSCalculator implements ProblemDivider {
             }
         }
         return max;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
     }
 }

@@ -1,7 +1,7 @@
 package ddm.handson.akka.remote.divider;
 
 import ddm.handson.akka.remote.messages.FindHashMessage;
-import ddm.handson.akka.remote.messages.HashFoundMessage;
+import ddm.handson.akka.remote.messages.FoundHashMessage;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -19,14 +19,21 @@ public class Hasher implements ProblemDivider {
     private int requiredOnePrefixes;
     private int requiredZeroPrefixes;
 
+    private boolean prefixesSet;
     private int[] prefixes;
     public String[] hashes;
 
-    public Hasher() {
+    private long startTime;
+    private long endTime;
+
+
+    public Hasher(int maxPrefixesPerType) {
         oneHashes = new Stack<>();
         zeroHashes = new Stack<>();
-        requiredOnePrefixes = Integer.MAX_VALUE;
-        requiredZeroPrefixes = Integer.MAX_VALUE;
+        requiredOnePrefixes = maxPrefixesPerType;
+        requiredZeroPrefixes = maxPrefixesPerType;
+        prefixesSet = false;
+        startTime = Long.MAX_VALUE;
     }
 
     public void setPrefixes(int[] prefixes) {
@@ -36,9 +43,12 @@ public class Hasher implements ProblemDivider {
         requiredOnePrefixes = ones;
         requiredZeroPrefixes = prefixes.length - ones;
         hashes = new String[prefixes.length];
+        prefixesSet = true;
+        if (done())
+            writePrefixes();
     }
 
-    public void handle(HashFoundMessage message) {
+    public void handle(FoundHashMessage message) {
         if (done())
             return;
 
@@ -48,18 +58,27 @@ public class Hasher implements ProblemDivider {
             zeroHashes.add(message.hash);
 
         if (done()) {
-            for (int i = 0; i < prefixes.length; ++i) {
-                if (prefixes[i] == 1)
-                    hashes[i] = oneHashes.pop();
-                else
-                    hashes[i] = zeroHashes.pop();
-            }
+            writePrefixes();
+        }
+    }
+
+    private void writePrefixes()
+    {
+        endTime = System.currentTimeMillis();
+        for (int i = 0; i < prefixes.length; ++i) {
+            if (prefixes[i] == 1)
+                hashes[i] = oneHashes.pop();
+            else
+                hashes[i] = zeroHashes.pop();
         }
     }
 
     @Override
     public Object getNextSubproblem() {
-        if (done())
+        if (startTime == Long.MAX_VALUE)
+            startTime = System.currentTimeMillis();
+
+        if (!additionalPrefixesRequired())
             return null;
 
         int prefix = 0;
@@ -72,8 +91,25 @@ public class Hasher implements ProblemDivider {
         return new FindHashMessage(rnd.nextInt(), prefix);
     }
 
+    private boolean additionalPrefixesRequired()
+    {
+        return !(oneHashes.size() >= requiredOnePrefixes && zeroHashes.size() >= requiredZeroPrefixes);
+    }
+
     @Override
     public boolean done() {
-        return oneHashes.size() >= requiredOnePrefixes && zeroHashes.size() >= requiredZeroPrefixes;
+        return isPrefixesSet() && additionalPrefixesRequired();
+    }
+
+    public boolean isPrefixesSet() {
+        return prefixesSet;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
     }
 }
