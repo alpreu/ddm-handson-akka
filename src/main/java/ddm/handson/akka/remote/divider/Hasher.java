@@ -2,6 +2,7 @@ package ddm.handson.akka.remote.divider;
 
 import ddm.handson.akka.remote.messages.FindHashMessage;
 import ddm.handson.akka.remote.messages.FoundHashMessage;
+import ddm.handson.akka.util.Utils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -9,8 +10,8 @@ import java.util.Stack;
 
 public class Hasher implements ProblemDivider {
 
-    private static final String ONES_PREFIX = "11111";
-    private static final String ZERO_PREFIX = "00000";
+    public static final String ONES_PREFIX = "11111";
+    public static final String ZERO_PREFIX = "00000";
     private static final Random rnd = new Random();
 
     private final Stack<String> oneHashes;
@@ -99,6 +100,28 @@ public class Hasher implements ProblemDivider {
     @Override
     public boolean done() {
         return isPrefixesSet() && additionalPrefixesRequired();
+    }
+
+    public static String findHash(FindHashMessage message) {
+        Random rnd = new Random(message.seed);
+        String hash = Utils.hash(rnd.nextInt());
+
+        if (message.prefix == 1) {
+            while (!hash.startsWith(ONES_PREFIX)) {
+                hash = Utils.hash(rnd.nextInt());
+            }
+        }
+        else if (message.prefix == 0) {
+            while (!hash.startsWith(ZERO_PREFIX)) {
+                hash = Utils.hash(rnd.nextInt());
+            }
+        }
+        else {
+            while (!(hash.startsWith(ZERO_PREFIX) || hash.startsWith(ONES_PREFIX))) {
+                hash = Utils.hash(rnd.nextInt());
+            }
+        }
+        return hash;
     }
 
     public boolean isPrefixesSet() {
