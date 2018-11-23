@@ -30,7 +30,7 @@ public class LinearCombinationFinder implements ProblemDivider {
         for (int p : passwords)
             sum += p;
         halfPasswordsSum = sum / 2;
-        done = passwords.length > 1;
+        done = passwords.length <= 1;
 
         prefixes = new int[passwords.length];
         prefix = -2;

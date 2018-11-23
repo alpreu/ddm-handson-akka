@@ -27,6 +27,8 @@ public class Hasher implements ProblemDivider {
     private long startTime;
     private long endTime;
 
+    private boolean done;
+
 
     public Hasher(int maxPrefixesPerType) {
         oneHashes = new Stack<>();
@@ -35,6 +37,7 @@ public class Hasher implements ProblemDivider {
         requiredZeroPrefixes = maxPrefixesPerType;
         prefixesSet = false;
         startTime = Long.MAX_VALUE;
+        done = false;
     }
 
     public void setPrefixes(int[] prefixes) {
@@ -46,7 +49,7 @@ public class Hasher implements ProblemDivider {
         hashes = new String[prefixes.length];
         prefixesSet = true;
         if (done())
-            writePrefixes();
+            writeHashes();
     }
 
     public void handle(FoundHashMessage message) {
@@ -59,11 +62,11 @@ public class Hasher implements ProblemDivider {
             zeroHashes.add(message.hash);
 
         if (done()) {
-            writePrefixes();
+            writeHashes();
         }
     }
 
-    private void writePrefixes()
+    private void writeHashes()
     {
         endTime = System.currentTimeMillis();
         for (int i = 0; i < prefixes.length; ++i) {
@@ -79,7 +82,7 @@ public class Hasher implements ProblemDivider {
         if (startTime == Long.MAX_VALUE)
             startTime = System.currentTimeMillis();
 
-        if (!additionalPrefixesRequired())
+        if (done || !additionalPrefixesRequired())
             return null;
 
         int prefix = 0;
@@ -99,7 +102,12 @@ public class Hasher implements ProblemDivider {
 
     @Override
     public boolean done() {
-        return isPrefixesSet() && additionalPrefixesRequired();
+        if (!done)
+        {
+            done = isPrefixesSet() && !additionalPrefixesRequired();
+        }
+
+        return done;
     }
 
     public static String findHash(FindHashMessage message) {
@@ -111,7 +119,7 @@ public class Hasher implements ProblemDivider {
                 hash = Utils.hash(rnd.nextInt());
             }
         }
-        else if (message.prefix == 0) {
+        else if (message.prefix == -1) {
             while (!hash.startsWith(ZERO_PREFIX)) {
                 hash = Utils.hash(rnd.nextInt());
             }
@@ -134,5 +142,15 @@ public class Hasher implements ProblemDivider {
 
     public long getEndTime() {
         return endTime;
+    }
+
+    public int missingOneHashes()
+    {
+        return requiredOnePrefixes - oneHashes.size();
+    }
+
+    public int missingZeroHashes()
+    {
+        return requiredZeroPrefixes - zeroHashes.size();
     }
 }

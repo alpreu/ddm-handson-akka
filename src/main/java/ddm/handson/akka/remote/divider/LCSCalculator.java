@@ -93,7 +93,7 @@ public class LCSCalculator implements ProblemDivider {
         if (done())
             return;
 
-        lcsPairs.add(new LCSPair(message.indexString1, message.indexString1, message.lcsLength));
+        lcsPairs.add(new LCSPair(message.indexString1, message.indexString2, message.lcsLength));
 
         if (done()) {
             endTime = System.currentTimeMillis();

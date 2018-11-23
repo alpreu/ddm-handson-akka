@@ -71,6 +71,7 @@ public class Master extends AbstractLoggingActor {
         return receiveBuilder()
                 .match(RemoteSystemMessage.class, this::handle)
                 .match(Solve.class, this::handle)
+                .match(SolveNextSubproblemMessage.class, this::handle)
                 .match(FoundDecryptedPasswordsMessage.class, this::handle)
                 .match(FoundLCSMessage.class, this::handle)
                 .match(FoundLinearCombinationMessage.class, this::handle)
@@ -200,8 +201,10 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().info("Hash received.");
         hasher.handle(message);
+        this.log().info("Hash received. Missing {} one hashes and {} zero hashes.",
+                hasher.missingOneHashes(),
+                hasher.missingZeroHashes());
 
         self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
     }
@@ -247,10 +250,17 @@ public class Master extends AbstractLoggingActor {
     private void printResults() {
         endTime = System.currentTimeMillis();
 
+        try {
+            // Hopefully all log entries will be printed before we print our result.
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         System.out.println();
         System.out.println("ID;Name;Password;Prefix;Partner;Hash");
         for (int i = 0; i < problemEntries.size(); ++i) {
-            System.out.println(String.format("%d;%s;%d;%d;%s",
+            System.out.println(String.format("%d;%s;%d;%d;%d;%s",
                     problemEntries.get(i).id,
                     problemEntries.get(i).name,
                     passwordCracker.passwords[i],

@@ -1,6 +1,7 @@
 package ddm.handson.akka.remote.actors;
 
 import akka.actor.*;
+import ddm.handson.akka.remote.messages.RemoteSystemMessage;
 import ddm.handson.akka.remote.messages.ShutdownMessage;
 
 import java.io.Serializable;
@@ -26,7 +27,6 @@ public class Shepherd extends AbstractLoggingActor {
     {
         this.master = master;
         slaves = new HashSet<>(42);
-
     }
 
     @Override
@@ -69,7 +69,7 @@ public class Shepherd extends AbstractLoggingActor {
         slave.tell(new Slave.AcknowledgementMessage(), self());
         context().watch(slave);
         Address remoteAddress = sender().path().address();
-        master.tell(new Master.RemoteSystemMessage(remoteAddress, message.numberOfWorkers), self());
+        master.tell(new RemoteSystemMessage(remoteAddress, message.numberOfWorkers), self());
     }
 
 

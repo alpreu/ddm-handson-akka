@@ -28,7 +28,6 @@ public class MasterActorSystem {
 
     private final ActorSystem system;
     private final ActorRef master;
-    private final ActorRef listener;
     private final ActorRef shepherd;
     private final ActorRef reaper;
 
@@ -53,21 +52,10 @@ public class MasterActorSystem {
         }
 
         reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
-        //listener = system.actorOf(Listener.props(), Listener.DEFAULT_NAME);
-        listener = null;
-        master = system.actorOf(Master.props(null, numberOfWorkers, numberOfSlaves, problemEntries), Master.DEFAULT_NAME);
+        master = system.actorOf(Master.props(numberOfWorkers, numberOfSlaves, problemEntries), Master.DEFAULT_NAME);
         shepherd = system.actorOf(Shepherd.props(master), Shepherd.DEFAULT_NAME);
 
         master.tell(new Master.Solve(), ActorRef.noSender());
-
-        // Listener gibt sie aus
-        // Beende das System
-    }
-
-    // terminates the system
-    public void shutdown()
-    {
-
     }
 
     public void awaitTermination() throws TimeoutException, InterruptedException {
