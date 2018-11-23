@@ -17,37 +17,10 @@ import java.util.*;
 public class Master extends AbstractLoggingActor {
     //region messages
 
-    // Messages for Subset sum
-    public static class FindLinearCombinationMessage implements Serializable{ }
-
-    // Messgaes vor longest common substring
-    public static class FindLCSMessage implements Serializable { }
-
-    public static class LCSMessage implements Serializable {
-        public final int indexString1;
-        public final int indexString2;
-        public final int lcsLength;
-
-        public LCSMessage(int indexString1, int indexString2, int lcsLength) {
-            this.indexString1 = indexString1;
-            this.indexString2 = indexString2;
-            this.lcsLength = lcsLength;
-        }
-    }
-
     // Messages for HashMining
     public static class FindHashesMessage implements Serializable {};
 
-    public static class HashFoundMessage implements Serializable
-    {
-        public final int id;
-        public final String hash;
 
-        public HashFoundMessage(int id, String hash) {
-            this.id = id;
-            this.hash = hash;
-        }
-    }
     //endregion
 
 
@@ -221,6 +194,25 @@ public class Master extends AbstractLoggingActor {
         }
     }
 
+    private void handle(FindLinearCombinationMessage message) {
+        this.log().info("Solving Subset Sum");
+        startTime = System.currentTimeMillis();
+
+        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
+        Arrays.sort(pwds);
+
+        int sum = 0;
+        for ( int i : pwds)
+            sum += i;
+
+        sum /= 2;
+
+        for (int i = 0; i < workers.size(); ++i)
+        {
+            router.route(new Worker.FindLinearCombinationMessage(i, (byte)Math.ceil(Math.log(i)), sum, pwds), self());
+        }
+    }
+
     private void handle(Worker.LinearCombinationSolutionMessage message) {
         if (message.solution == -1)
             return;
@@ -252,24 +244,7 @@ public class Master extends AbstractLoggingActor {
         return -1;
     }
 
-    private void handle(FindLinearCombinationMessage message) {
-        this.log().info("Solving Subset Sum");
-        startTime = System.currentTimeMillis();
 
-        int[] pwds = Arrays.copyOf(decryptedPasswords, decryptedPasswords.length);
-        Arrays.sort(pwds);
-
-        int sum = 0;
-        for ( int i : pwds)
-            sum += i;
-
-        sum /= 2;
-
-        for (int i = 0; i < workers.size(); ++i)
-        {
-            router.route(new Worker.FindLinearCombinationMessage(i, (byte)Math.ceil(Math.log(i)), sum, pwds), self());
-        }
-    }
 
 
     private void handle(HashFoundMessage message) {
