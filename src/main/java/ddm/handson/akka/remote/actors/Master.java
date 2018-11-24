@@ -97,12 +97,12 @@ public class Master extends AbstractLoggingActor {
             return;
         }
 
-        this.log().info("Trying to create {} worker(s) on slave", message.numberOfWorkers);
+        this.log().debug("Trying to create {} worker(s) on slave", message.numberOfWorkers);
         for (int i = 0; i < message.numberOfWorkers; ++i) {
             ActorRef worker = context()
                     .actorOf(Worker.props().withDeploy(new Deploy(new RemoteScope(message.remoteAddress))));
             addWorker(worker);
-            this.log().info("Remote worker {} connected.", worker);
+            this.log().debug("Remote worker {} connected.", worker);
         }
 
         ++connectedSlaves;
@@ -113,7 +113,7 @@ public class Master extends AbstractLoggingActor {
         }
         else
         {
-            log().info("Waiting for {} more slave(s).", expectedSlaves - connectedSlaves);
+            log().debug("Waiting for {} more slave(s).", expectedSlaves - connectedSlaves);
         }
     }
 
@@ -127,7 +127,7 @@ public class Master extends AbstractLoggingActor {
     private void handle(Solve message) {
 
         if (expectedSlaves != connectedSlaves) {
-            log().info("Cannot start problem solving pipeline yet: Waiting for {} slave(s) to connect.",
+            log().debug("Cannot start problem solving pipeline yet: Waiting for {} slave(s) to connect.",
                     expectedSlaves - connectedSlaves);
             return;
         }
@@ -148,6 +148,8 @@ public class Master extends AbstractLoggingActor {
         lcsCalculator = new LCSCalculator(ProblemEntry.getGeneSequences(problemEntries));
 
         hasher = new Hasher(problemEntries.size());
+
+        log().info("Starting to solve problems.");
 
         startTime = System.currentTimeMillis();
 
@@ -201,7 +203,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().info("Decrypted passwords received.");
+        this.log().debug("Decrypted passwords received.");
         passwordCracker.handle(message);
 
         if (passwordCracker.done() && lcFinder == null) {
@@ -217,7 +219,7 @@ public class Master extends AbstractLoggingActor {
             return;
 
         hasher.handle(message);
-        this.log().info("Hash received. Missing {} one hashes and {} zero hashes.",
+        this.log().debug("Hash received. Missing {} one hashes and {} zero hashes.",
                 hasher.missingOneHashes(),
                 hasher.missingZeroHashes());
 
@@ -228,7 +230,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().info("Longest common substring received.");
+        this.log().debug("Longest common substring received.");
         lcsCalculator.handle(message);
 
         self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
@@ -238,7 +240,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().info("Linear combination received. (Timeout is possible.)");
+        this.log().debug("Linear combination received. (Timeout is possible.)");
 
         lcFinder.handle(message);
         --lcMessagesInProgress;
@@ -288,7 +290,7 @@ public class Master extends AbstractLoggingActor {
                     problemEntries.get(i).name,
                     passwordCracker.passwords[i],
                     lcFinder.prefixes[i],
-                    lcsCalculator.partnerIds[i],
+                    lcsCalculator.partnerIndices[i] + 1,
                     hasher.hashes[i]));
         }
         System.out.println();

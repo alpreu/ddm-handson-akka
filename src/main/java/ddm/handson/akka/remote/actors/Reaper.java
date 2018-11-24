@@ -35,7 +35,7 @@ public class Reaper extends AbstractLoggingActor {
         final ActorRef sender = this.getSender();
         if (watchees.add(sender)) {
             this.getContext().watch(sender);
-            this.log().info("Started watching {}", sender);
+            this.log().debug("Started watching {}", sender);
         }
     }
 
@@ -43,7 +43,7 @@ public class Reaper extends AbstractLoggingActor {
         final ActorRef sender = this.getSender();
 
         if (watchees.remove(sender)) {
-            this.log().info("{} has terminated", sender);
+            this.log().warning("{} has terminated", sender);
 
             if (watchees.isEmpty()) {
                 this.log().info("All actors have terminated. Terminating the ActorSystem: {}",
@@ -57,13 +57,13 @@ public class Reaper extends AbstractLoggingActor {
     @Override
     public void preStart() throws Exception {
         super.preStart();
-        this.log().info("Starting " + DEFAULT_NAME);
+        this.log().debug("Starting " + DEFAULT_NAME);
     }
 
     @Override
     public void postStop() throws Exception {
         super.postStop();
-        this.log().info("Stopping " + DEFAULT_NAME);
+        this.log().debug("Stopping " + DEFAULT_NAME);
     }
 
     public static Props props()

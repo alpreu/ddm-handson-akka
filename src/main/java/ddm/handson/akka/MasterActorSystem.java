@@ -18,28 +18,23 @@ import java.util.concurrent.TimeoutException;
 public class MasterActorSystem {
 
     public static final String DEFAULT_NAME = "MasterActorSystem";
-    public static final int DEFAULT_PORT = 33333;
+    public static final int DEFAULT_PORT = 7877;
     public static final String DEFAULT_ROLE = "master";
     public static final String DEFAULT_HOST = "127.0.0.1";
 
-    private final int numberOfWorkers;
-    private final int numberOfSlaves;
-    private final String problemFile;
 
     private final ActorSystem system;
     private final ActorRef master;
-    private final ActorRef shepherd;
-    private final ActorRef reaper;
 
     // Ein master besteht aus 1 x Listener, 1 x Shepherd, 1 x Reaper, n x Workers
 
-    public MasterActorSystem(int numberOfWorkers, int numberOfSlaves, String problemFile) {
+    public MasterActorSystem(int port, int numberOfWorkers, int numberOfSlaves, String problemFile) {
         System.out.println("Creating " + DEFAULT_NAME);
-        this.numberOfWorkers = numberOfWorkers;
-        this.numberOfSlaves = numberOfSlaves;
-        this.problemFile = problemFile;
 
-        final Config config = Utils.createConfiguration(DEFAULT_HOST, DEFAULT_PORT);
+        if (port <= 0)
+            port = DEFAULT_PORT;
+
+        final Config config = Utils.createRemoteAkkaConfig(DEFAULT_HOST, port);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
         // lade problem file
@@ -51,9 +46,9 @@ public class MasterActorSystem {
             System.exit(1);
         }
 
-        reaper = system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
+        system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
         master = system.actorOf(Master.props(numberOfWorkers, numberOfSlaves, problemEntries), Master.DEFAULT_NAME);
-        shepherd = system.actorOf(Shepherd.props(master), Shepherd.DEFAULT_NAME);
+        system.actorOf(Shepherd.props(master), Shepherd.DEFAULT_NAME);
 
         master.tell(new Master.Solve(), ActorRef.noSender());
     }

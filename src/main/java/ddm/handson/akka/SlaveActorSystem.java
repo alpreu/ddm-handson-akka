@@ -16,13 +16,18 @@ public class SlaveActorSystem {
 
     public static final String DEFAULT_NAME = "SlaveActorSystem";
     public static final String DEFAULT_HOST = "127.0.0.1";
-    public static final int DEFAULT_PORT = 33334;
+    public static final int DEFAULT_PORT = 7879;
 
     private final ActorSystem system;
 
-    public SlaveActorSystem(String masterHost, int masterPort, int numberOfWorkers) {
+    public SlaveActorSystem(int port, String masterHost, int masterPort, int numberOfWorkers) {
 
-        final Config config = Utils.createConfiguration(DEFAULT_HOST, DEFAULT_PORT);
+        if (port <= 0)
+            port = DEFAULT_PORT;
+        if (masterPort <= 0)
+            masterPort = MasterActorSystem.DEFAULT_PORT;
+
+        final Config config = Utils.createRemoteAkkaConfig(DEFAULT_HOST, port);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
         system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);

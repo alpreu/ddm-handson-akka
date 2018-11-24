@@ -71,7 +71,7 @@ public class Shepherd extends AbstractLoggingActor {
             slave.tell(PoisonPill.getInstance(), this.getSelf());
 
         // Log the stop event
-        this.log().info("Stopped {}.", this.getSelf());
+        this.log().debug("Stopped {}.", this.getSelf());
     }
 
     private void handle(SubscriptionMessage message) {

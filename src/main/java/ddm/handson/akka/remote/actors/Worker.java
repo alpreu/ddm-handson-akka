@@ -31,7 +31,7 @@ public class Worker extends AbstractLoggingActor {
     @Override
     public void postStop() throws Exception {
         super.postStop();
-        log().info("Worker {} shuttig down", self());
+        log().debug("Worker {} shuttig down", self());
     }
 
     @Override

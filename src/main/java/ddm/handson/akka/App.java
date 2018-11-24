@@ -32,11 +32,25 @@ public class App {
                 .hasArg()
                 .valueSeparator(' ')
                 .build();
+        Option portOpt = Option.builder()
+                .longOpt("port")
+                .hasArg()
+                .valueSeparator(' ')
+                .optionalArg(true)
+                .build();
+        Option masterPortOpt = Option.builder()
+                .longOpt("master-port")
+                .hasArg()
+                .valueSeparator(' ')
+                .optionalArg(true)
+                .build();
 
         options.addOption(workers);
         options.addOption(slaves);
         options.addOption(input);
         options.addOption(host);
+        options.addOption(portOpt);
+        options.addOption(masterPortOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -44,15 +58,18 @@ public class App {
 
             String nodeType = line.getArgList().get(0);
 
+            int port = Integer.parseInt(portOpt.getValue("-1"));
+            int masterPort = Integer.parseInt(masterPortOpt.getValue("-1"));
+
             if (nodeType.equals("master")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
                 String inputFilename = line.getOptionValue("input");
-                runAsMaster(numberOfWorkers, numberOfSlaves, inputFilename);
+                runAsMaster(port, numberOfWorkers, numberOfSlaves, inputFilename);
             } else if (nodeType.equals("slave")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
-                runAsSlave(hostAddress, numberOfWorkers);
+                runAsSlave(hostAddress, port, masterPort, numberOfWorkers);
             } else {
                 System.err.println("First argument must specify type: 'master' or 'slave'");
             }
@@ -65,32 +82,27 @@ public class App {
 
 
 
-    private static void runAsMaster(int numberOfWorkers, int numberOfSlaves, String inputFile)
+    private static void runAsMaster(int port, int numberOfWorkers, int numberOfSlaves, String inputFile)
     {
         // Master erstellen
 
-        MasterActorSystem master = new MasterActorSystem(numberOfWorkers, numberOfSlaves, inputFile);
+        MasterActorSystem master = new MasterActorSystem(port, numberOfWorkers, numberOfSlaves, inputFile);
         try {
             master.awaitTermination();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (TimeoutException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private static void runAsSlave(String masterHost, int numberOfWorkers)
+    private static void runAsSlave(String masterHost, int port, int masterPort, int numberOfWorkers)
     {
         // Master erstellen
 
-        SlaveActorSystem slaveActorSystem = new SlaveActorSystem(masterHost, MasterActorSystem.DEFAULT_PORT,
-                numberOfWorkers);
+        SlaveActorSystem slaveActorSystem = new SlaveActorSystem(port, masterHost, masterPort, numberOfWorkers);
 
         try {
             slaveActorSystem.awaitTermination();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (TimeoutException | InterruptedException e) {
             e.printStackTrace();
         }
 

@@ -38,7 +38,7 @@ public class LCSCalculator implements ProblemDivider {
 
 
     private final String[] strings;
-    public final int[] partnerIds;
+    public final int[] partnerIndices;
 
     private int indexString1;
     private int indexString2;
@@ -54,8 +54,8 @@ public class LCSCalculator implements ProblemDivider {
         indexString1 = 0;
         indexString2 = 0;
 
-        partnerIds = new int[strings.length];
-        Arrays.fill(partnerIds, -1);
+        partnerIndices = new int[strings.length];
+        Arrays.fill(partnerIndices, -1);
         pairCount = ((strings.length - 1) * strings.length) / 2;
         lcsPairs = new HashSet<>(pairCount);
 
@@ -100,8 +100,8 @@ public class LCSCalculator implements ProblemDivider {
             final int lcs[] = new int[strings.length];
             lcsPairs.stream().forEach((item) -> {
                 if (item.lcs > lcs[item.indexString1]) {
-                    partnerIds[item.indexString1] = item.indexString2;
-                    partnerIds[item.indexString2] = item.indexString1;
+                    partnerIndices[item.indexString1] = item.indexString2;
+                    partnerIndices[item.indexString2] = item.indexString1;
                     lcs[item.indexString1] = item.lcs;
                     lcs[item.indexString2] = item.lcs;
                 }

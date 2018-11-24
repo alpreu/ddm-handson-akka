@@ -3,25 +3,63 @@ package ddm.handson.akka.util;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Utils {
-    // TODO: Extend to what we really need
-    public static Config createConfiguration(String host, int port) {
 
-        // Create the Config with fallback to the application config
-        return ConfigFactory.parseString(
-                "akka.remote.netty.tcp.hostname = \"" + host + "\"\n"
-                        + "akka.remote.netty.tcp.port = " + port + "\n"
-                        + "akka.remote.netty.tcp.message-frame-size =  30000000b\n"
-                        + "akka.remote.netty.tcp.send-buffer-size =  30000000b\n"
-                        + "akka.remote.netty.tcp.receive-buffer-size =  30000000b\n"
-                        + "akka.remote.netty.tcp.maximum-frame-size = 30000000b\n"
-                        + "akka.remote.enabled-transports = [\"akka.remote.netty.tcp\"]\n"
-                        + "akka.actor.provider = remote\n"
-                        + "akka.remote.maximum-payload-bytes = 30000000 bytes");
+    /**
+     * Binding to replace variables in our pimped {@code .conf} files.
+     */
+    private static class VariableBinding {
+
+        private final String pattern, value;
+
+        private VariableBinding(String variableName, Object value) {
+            this.pattern = Pattern.quote("$" + variableName);
+            this.value = Objects.toString(value);
+        }
+
+        private String apply(String str) {
+            return str.replaceAll(this.pattern, this.value);
+        }
+    }
+
+    /**
+     * Load a {@link Config}.
+     *
+     * @param resource the path of the config resource
+     * @return the {@link Config}
+     */
+    private static Config loadConfig(String resource, VariableBinding... bindings) {
+        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource)) {
+            if (in == null) {
+                throw new FileNotFoundException("Could not get the resource " + resource);
+            }
+            Stream<String> content = new BufferedReader(new InputStreamReader(in)).lines();
+            for (VariableBinding binding : bindings) {
+                content = content.map(binding::apply);
+            }
+            String result = content.collect(Collectors.joining("\n"));
+            return ConfigFactory.parseString(result);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not load resource " + resource);
+        }
+    }
+
+
+    public static Config createRemoteAkkaConfig(String host, int port) {
+        Config config = loadConfig(
+                "base.conf",
+                new VariableBinding("host", host),
+                new VariableBinding("port", port)
+        );
+        return config;
     }
 
     public static String hash(int number) {

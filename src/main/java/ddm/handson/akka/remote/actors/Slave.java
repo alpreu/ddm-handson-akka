@@ -45,7 +45,7 @@ public class Slave extends AbstractLoggingActor {
 
     private void handle(ShutdownMessage shutdownMessage) {
         // Log remote shutdown message
-        this.log().info("Was asked to stop.");
+        this.log().debug("Was asked to stop.");
 
         // Stop self by sending a poison pill
         this.getSelf().tell(PoisonPill.getInstance(), this.getSelf());
@@ -61,7 +61,7 @@ public class Slave extends AbstractLoggingActor {
 
     private void handle(AcknowledgementMessage acknowledgementMessage) {
         CancelConnectSchedule();
-        this.log().info("Subscription successfully acknowledged by {}.", this.getSender());
+        this.log().debug("Subscription successfully acknowledged by {}.", this.getSender());
     }
 
     private void handle(AddressMessage message) {
