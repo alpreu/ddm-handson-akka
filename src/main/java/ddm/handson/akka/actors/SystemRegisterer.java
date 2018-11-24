@@ -6,28 +6,18 @@ import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
-import ddm.handson.akka.Master;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import ddm.handson.akka.MasterActorSystem;
+import ddm.handson.akka.messages.WorkerNumberMessage;
 
-import java.io.Serializable;
-
-public class WorkerRegisterer extends AbstractLoggingActor {
+public class SystemRegisterer extends AbstractLoggingActor {
     public static final String DEFAULT_NAME = "workerregisterer";
 
     public static Props props(int numberOfWorkers) {
-        return Props.create(WorkerRegisterer.class, numberOfWorkers);
+        return Props.create(SystemRegisterer.class, numberOfWorkers);
     }
 
-    public WorkerRegisterer(int numberOfWorkers) {
+    public SystemRegisterer(int numberOfWorkers) {
         this.numberOfWorkers = numberOfWorkers;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class WorkerNumberMessage implements Serializable {
-        private static final long serialVersionUID = -1393040810390710323L;
-        public final int numberOfWorkers;
     }
 
     private int numberOfWorkers;
@@ -65,9 +55,9 @@ public class WorkerRegisterer extends AbstractLoggingActor {
     }
 
     private void register(Member member) {
-        if (member.hasRole(Master.MASTER_ROLE))
+        if (member.hasRole(MasterActorSystem.MASTER_ROLE))
             this.getContext()
-                    .actorSelection(member.address() + "/user/" + Profiler.DEFAULT_NAME)
+                    .actorSelection(member.address() + "/user/" + Master.DEFAULT_NAME)
                     .tell(new WorkerNumberMessage(this.numberOfWorkers), getSelf());
     }
 }

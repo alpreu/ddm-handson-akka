@@ -43,19 +43,19 @@ public class App {
 
             String nodeType = line.getArgList().get(0);
 
-            if (nodeType.equals(Master.MASTER_ROLE)) {
+            if (nodeType.equals(MasterActorSystem.MASTER_ROLE)) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
                 String inputFilename = line.getOptionValue("input");
 
-                Master.start(SYSTEM_NAME, numberOfWorkers, MASTER_HOST, MASTER_PORT, numberOfSlaves);
-            } else if (nodeType.equals(Slave.SLAVE_ROLE)) {
+                MasterActorSystem.start(SYSTEM_NAME, numberOfWorkers, MASTER_HOST, MASTER_PORT, numberOfSlaves, inputFilename);
+            } else if (nodeType.equals(SlaveActorSystem.SLAVE_ROLE)) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
 
-                Slave.start(SYSTEM_NAME, numberOfWorkers, SLAVE_HOST, SLAVE_PORT, MASTER_HOST, MASTER_PORT);
+                SlaveActorSystem.start(SYSTEM_NAME, numberOfWorkers, SLAVE_HOST, SLAVE_PORT, MASTER_HOST, MASTER_PORT);
             } else {
-                System.err.println("First argument must specify type: '" + Master.MASTER_ROLE + "' or '" + Slave.SLAVE_ROLE + "'");
+                System.err.println("First argument must specify type: '" + MasterActorSystem.MASTER_ROLE + "' or '" + SlaveActorSystem.SLAVE_ROLE + "'");
             }
         } catch (Exception e) {
             System.err.println("Parsing arguments failed. Error: " + e.getMessage());
