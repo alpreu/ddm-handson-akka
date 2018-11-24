@@ -30,9 +30,7 @@ public class MasterActorSystem extends HandsonSystem {
                 e.printStackTrace();
                 System.exit(1);
             }
-
-
-            system.actorOf(ClusterListener.props(), ClusterListener.DEFAULT_NAME);
+            
             system.actorOf(Master.props(numberOfSlaves + 1, problemEntries), Master.DEFAULT_NAME);
             system.actorOf(SystemRegisterer.props(numberOfWorkers));
 

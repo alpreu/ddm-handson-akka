@@ -37,7 +37,7 @@ public class ClusterListener extends AbstractLoggingActor {
         return receiveBuilder()
                 .match(CurrentClusterState.class, state -> this.log().info("Current members: {}", state.members()))
                 .match(MemberUp.class, mUp -> this.log().info("Member is Up: {}", mUp.member()))
-                .match(UnreachableMember.class, mUnreachable -> this.log().info("Member detected as unreachable: {}", mUnreachable.member()))
+                .match(UnreachableMember.class, mUnreachable -> getContext().getSystem().terminate())
                 .match(MemberRemoved.class, mRemoved -> this.log().info("Member is Removed: {}", mRemoved.member()))
                 .match(MemberEvent.class, message -> {}) //ignore
                 .build();

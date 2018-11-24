@@ -236,8 +236,8 @@ public class Master extends AbstractLoggingActor {
     private void printResultsAndShutdown() {
         printResultsAndShutdown = true;
         printResults();
-        log().info("All work done. MasterActorSystem is terminating itself by sending a PoisonPill.");
-        self().tell(PoisonPill.getInstance(), this.getSelf());
+        log().info("All work done. MasterActorSystem is terminating itself.");
+        getContext().getSystem().terminate();
     }
 
     private void printResults() {
