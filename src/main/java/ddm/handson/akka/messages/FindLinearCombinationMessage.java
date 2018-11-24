@@ -5,6 +5,7 @@ import java.util.Stack;
 
 public class FindLinearCombinationMessage implements Serializable
 {
+    private static final long serialVersionUID = -7750684600381262341L;
     public final long prefix;
     public final int prefixLength;
     public final int sum;

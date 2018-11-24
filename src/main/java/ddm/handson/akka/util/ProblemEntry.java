@@ -6,6 +6,7 @@ import java.util.List;
 
 public class ProblemEntry implements Serializable {
 
+    private static final long serialVersionUID = 2636096525911234811L;
     public final int id;
     public final String name;
     public final String password;

@@ -59,14 +59,6 @@ public class App {
                 int masterPort = Integer.parseInt(line.getOptionValue(MASTERPORTOPT, "0"));
                 String inputFilename = line.getOptionValue(INPUTOPT, "");
 
-
-                System.out.println(numberOfWorkers);
-                System.out.println(numberOfSlaves);
-                System.out.println(masterHost);
-                System.out.println(masterPort);
-                System.out.println(inputFilename);
-
-
                 if (numberOfWorkers == 0 ||
                 numberOfSlaves == 0 ||
                 masterPort == 0 ||
@@ -85,12 +77,6 @@ public class App {
                 int masterPort = Integer.parseInt(line.getOptionValue(MASTERPORTOPT, "0"));
                 String slaveHost = Utils.getLocalHost();
                 int slavePort = Integer.parseInt(line.getOptionValue(SLAVEPORTOPT, "0"));
-
-                System.out.println(numberOfWorkers);
-                System.out.println(masterHost);
-                System.out.println(masterPort);
-                System.out.println(slaveHost);
-                System.out.println(slavePort);
 
                 if (numberOfWorkers == 0 ||
                 masterPort == 0 ||

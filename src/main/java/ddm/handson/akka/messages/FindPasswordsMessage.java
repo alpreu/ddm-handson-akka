@@ -5,6 +5,7 @@ import ddm.handson.akka.util.IdHashPair;
 import java.io.Serializable;
 
 public class FindPasswordsMessage implements Serializable {
+    private static final long serialVersionUID = 8385597139269813788L;
     public final int lowerBound;
     public final int upperBound;
     public final IdHashPair[] hashes;

@@ -3,6 +3,7 @@ package ddm.handson.akka.util;
 import java.io.Serializable;
 
 public class IdPasswordPair implements Serializable {
+    private static final long serialVersionUID = -5501700020583494971L;
     public final int id;
     public final int password;
 

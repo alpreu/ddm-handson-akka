@@ -92,7 +92,9 @@ public class Master extends AbstractLoggingActor {
 
 
 
-    public static class Solve implements Serializable { }
+    public static class Solve implements Serializable {
+        private static final long serialVersionUID = 7756907593974311609L;
+    }
 
     private void handle(Solve message) {
         if (!allWorkersRegistered()) {

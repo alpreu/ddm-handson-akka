@@ -3,6 +3,7 @@ package ddm.handson.akka.messages;
 import java.io.Serializable;
 
 public class FindLCSMessage implements Serializable {
+    private static final long serialVersionUID = 1409540026008654655L;
     public final int indexString1;
     public final int indexString2;
     public final String string1;

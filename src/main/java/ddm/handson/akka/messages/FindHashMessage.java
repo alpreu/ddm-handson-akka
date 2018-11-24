@@ -3,6 +3,7 @@ package ddm.handson.akka.messages;
 import java.io.Serializable;
 
 public class FindHashMessage implements Serializable {
+    private static final long serialVersionUID = 4800589867487167649L;
     public final int seed;
     public final int prefix;
 
