@@ -27,13 +27,16 @@ public class MasterActorSystem {
 
     // Ein master besteht aus 1 x Listener, 1 x Shepherd, 1 x Reaper, n x Workers
 
-    public MasterActorSystem(int port, int numberOfWorkers, int numberOfSlaves, String problemFile) {
+    public MasterActorSystem(String host, int port, int numberOfWorkers, int numberOfSlaves, String problemFile) {
         System.out.println("Creating " + DEFAULT_NAME);
 
         if (port <= 0)
             port = DEFAULT_PORT;
 
-        final Config config = Utils.createRemoteAkkaConfig(Utils.getLocalHost(), port);
+        if (host == "")
+            host = Utils.getLocalHost();
+
+        final Config config = Utils.createRemoteAkkaConfig(host, port);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
         // lade problem file

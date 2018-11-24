@@ -27,7 +27,7 @@ public class App {
                 .hasArg()
                 .valueSeparator(' ')
                 .build();
-        Option host = Option.builder()
+        Option hostOpt = Option.builder()
                 .longOpt("host")
                 .hasArg()
                 .valueSeparator(' ')
@@ -48,7 +48,7 @@ public class App {
         options.addOption(workers);
         options.addOption(slaves);
         options.addOption(input);
-        options.addOption(host);
+        options.addOption(hostOpt);
         options.addOption(portOpt);
         options.addOption(masterPortOpt);
 
@@ -71,7 +71,8 @@ public class App {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
                 String inputFilename = line.getOptionValue("input");
-                runAsMaster(port, numberOfWorkers, numberOfSlaves, inputFilename);
+                String host = line.hasOption("host") ? line.getOptionValue("host") : "";
+                runAsMaster(host, port, numberOfWorkers, numberOfSlaves, inputFilename);
             } else if (nodeType.equals("slave")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
                 String hostAddress = line.getOptionValue("host");
@@ -88,11 +89,11 @@ public class App {
 
 
 
-    private static void runAsMaster(int port, int numberOfWorkers, int numberOfSlaves, String inputFile)
+    private static void runAsMaster(String host, int port, int numberOfWorkers, int numberOfSlaves, String inputFile)
     {
         // Master erstellen
 
-        MasterActorSystem master = new MasterActorSystem(port, numberOfWorkers, numberOfSlaves, inputFile);
+        MasterActorSystem master = new MasterActorSystem(host, port, numberOfWorkers, numberOfSlaves, inputFile);
         try {
             master.awaitTermination();
         } catch (TimeoutException | InterruptedException e) {

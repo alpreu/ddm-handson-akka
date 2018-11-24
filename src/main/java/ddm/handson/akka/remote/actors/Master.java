@@ -153,7 +153,7 @@ public class Master extends AbstractLoggingActor {
 
         startTime = System.currentTimeMillis();
 
-        for (int i = 0; i < 2 * workers.size(); ++i) {
+        for (int i = 0; i < 3 * workers.size(); ++i) {
             self().tell(new SolveNextSubproblemMessage(), self());
         }
     }
