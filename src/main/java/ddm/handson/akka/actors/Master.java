@@ -1,10 +1,7 @@
 package ddm.handson.akka.actors;
 
 import akka.actor.*;
-import akka.routing.ActorRefRoutee;
-import akka.routing.Routee;
-import akka.routing.Router;
-import akka.routing.SmallestMailboxRoutingLogic;
+import akka.routing.*;
 import ddm.handson.akka.divider.Hasher;
 import ddm.handson.akka.divider.LCSCalculator;
 import ddm.handson.akka.divider.LinearCombinationFinder;
@@ -108,7 +105,7 @@ public class Master extends AbstractLoggingActor {
             routees.add(new ActorRefRoutee(a));
         }
 
-        router = new Router(new SmallestMailboxRoutingLogic(), routees);
+        router = new Router(new RoundRobinRoutingLogic(), routees);
 
         passwordCracker = new PasswordCracker(
                 workers.size(),
