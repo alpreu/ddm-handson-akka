@@ -11,6 +11,12 @@ public class ProblemEntry implements Serializable {
     public final String password;
     public final String gene;
 
+    @SuppressWarnings("unused")
+    public ProblemEntry()
+    {
+        this(0, "", "", "");
+    }
+
     public ProblemEntry(int id, String name, String password, String gene)
     {
         this.id = id;

@@ -11,6 +11,12 @@ public class RemoteSystemMessage implements Serializable {
     public final Address remoteAddress;
     public final int numberOfWorkers;
 
+    @SuppressWarnings("unused")
+    public RemoteSystemMessage() {
+        this(null, 0);
+    }
+
+
     public RemoteSystemMessage(Address remoteAddress, int numberOfWorkers) {
         this.remoteAddress = remoteAddress;
         this.numberOfWorkers = numberOfWorkers;

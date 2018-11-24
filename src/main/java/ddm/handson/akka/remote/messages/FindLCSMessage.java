@@ -8,6 +8,11 @@ public class FindLCSMessage implements Serializable {
     public final String string1;
     public final String string2;
 
+    @SuppressWarnings("unused")
+    public FindLCSMessage() {
+        this(0, 0, "", "");
+    }
+
     public FindLCSMessage(int indexString1, int indexString2, String string1, String string2) {
         this.indexString1 = indexString1;
         this.indexString2 = indexString2;

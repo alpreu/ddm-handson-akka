@@ -6,6 +6,11 @@ public class FindHashMessage implements Serializable {
     public final int seed;
     public final int prefix;
 
+    @SuppressWarnings("unused")
+    public FindHashMessage() {
+        this(0, 0);
+    }
+
     /**
      * Calculates a hash
      * @param seed Seed to use for randomizer
@@ -17,4 +22,6 @@ public class FindHashMessage implements Serializable {
         this.seed = seed;
         this.prefix = prefix;
     }
+
+
 }

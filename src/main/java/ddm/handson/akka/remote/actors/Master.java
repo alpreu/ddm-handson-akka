@@ -113,7 +113,7 @@ public class Master extends AbstractLoggingActor {
         }
         else
         {
-            log().debug("Waiting for {} more slave(s).", expectedSlaves - connectedSlaves);
+            log().info("Waiting for {} more slave(s).", expectedSlaves - connectedSlaves);
         }
     }
 

@@ -58,8 +58,14 @@ public class App {
 
             String nodeType = line.getArgList().get(0);
 
-            int port = Integer.parseInt(portOpt.getValue("-1"));
-            int masterPort = Integer.parseInt(masterPortOpt.getValue("-1"));
+            int port = -1;
+            int masterPort = -1;
+
+            if (line.hasOption("port"))
+                port = Integer.parseInt(line.getOptionValue("port"));
+
+            if (line.hasOption("master-port"))
+                masterPort = Integer.parseInt(line.getOptionValue("master-port"));
 
             if (nodeType.equals("master")) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));

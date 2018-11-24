@@ -10,6 +10,11 @@ public class FindLinearCombinationMessage implements Serializable
     public final int sum;
     public final int[] passwords;
 
+    @SuppressWarnings("unused")
+    public FindLinearCombinationMessage() {
+        this(0, 0, 0, null);
+    }
+
     public FindLinearCombinationMessage(long prefix, int prefixLength,  int sum, int[] ascSortedPasswords) {
         this.prefix = prefix;
         this.prefixLength = prefixLength;

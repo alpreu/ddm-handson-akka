@@ -12,6 +12,10 @@ public class Shepherd extends AbstractLoggingActor {
     public static class SubscriptionMessage implements Serializable {
         public final int numberOfWorkers;
 
+        @SuppressWarnings("unused")
+        public SubscriptionMessage() {
+            this(0);
+        }
         public SubscriptionMessage(int numberOfWorkers) {
             this.numberOfWorkers = numberOfWorkers;
         }

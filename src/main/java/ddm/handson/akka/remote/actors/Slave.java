@@ -13,13 +13,17 @@ public class Slave extends AbstractLoggingActor {
     public static class AddressMessage implements Serializable {
         public final Address address;
 
+        @SuppressWarnings("unused")
+        public AddressMessage() {
+            this(null);
+        }
+
         public AddressMessage(Address address) {
             this.address = address;
         }
     }
 
-    public static class AcknowledgementMessage implements Serializable {
-    }
+    public static class AcknowledgementMessage implements Serializable { }
 
     public static final String DEFAULT_NAME = "slave";
 
