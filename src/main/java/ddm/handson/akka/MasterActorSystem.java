@@ -20,7 +20,6 @@ public class MasterActorSystem {
     public static final String DEFAULT_NAME = "MasterActorSystem";
     public static final int DEFAULT_PORT = 7877;
     public static final String DEFAULT_ROLE = "master";
-    public static final String DEFAULT_HOST = "127.0.0.1";
 
 
     private final ActorSystem system;
@@ -34,7 +33,7 @@ public class MasterActorSystem {
         if (port <= 0)
             port = DEFAULT_PORT;
 
-        final Config config = Utils.createRemoteAkkaConfig(DEFAULT_HOST, port);
+        final Config config = Utils.createRemoteAkkaConfig(Utils.getLocalHost(), port);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
         // lade problem file

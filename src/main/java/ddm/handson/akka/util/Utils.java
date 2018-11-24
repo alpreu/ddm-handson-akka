@@ -4,6 +4,8 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
@@ -75,6 +77,15 @@ public class Utils {
         }
         catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static String getLocalHost()
+    {
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            return "localhost";
         }
     }
 }

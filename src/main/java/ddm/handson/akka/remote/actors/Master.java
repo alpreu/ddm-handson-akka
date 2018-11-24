@@ -138,7 +138,7 @@ public class Master extends AbstractLoggingActor {
             routees.add(new ActorRefRoutee(a));
         }
 
-        router = new Router(new SmallestMailboxRoutingLogic(), routees);
+        router = new Router(new RoundRobinRoutingLogic(), routees);
 
         passwordCracker = new PasswordCracker(
                 workers.size(),
@@ -203,7 +203,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().debug("Decrypted passwords received.");
+        this.log().debug("{} sends decrypted passwords.", sender());
         passwordCracker.handle(message);
 
         if (passwordCracker.done() && lcFinder == null) {
@@ -219,7 +219,8 @@ public class Master extends AbstractLoggingActor {
             return;
 
         hasher.handle(message);
-        this.log().debug("Hash received. Missing {} one hashes and {} zero hashes.",
+        this.log().debug("{} sends hash. Missing {} one hashes and {} zero hashes.",
+                sender(),
                 hasher.missingOneHashes(),
                 hasher.missingZeroHashes());
 
@@ -230,7 +231,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().debug("Longest common substring received.");
+        this.log().debug("{} sends LCS.", sender());
         lcsCalculator.handle(message);
 
         self().tell(new SolveNextSubproblemMessage(), ActorRef.noSender());
@@ -240,7 +241,7 @@ public class Master extends AbstractLoggingActor {
         if (printResultsAndShutdown)
             return;
 
-        this.log().debug("Linear combination received. (Timeout is possible.)");
+        this.log().debug("{} sends LC.", sender());
 
         lcFinder.handle(message);
         --lcMessagesInProgress;

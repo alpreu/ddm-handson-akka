@@ -15,7 +15,6 @@ import java.util.concurrent.TimeoutException;
 public class SlaveActorSystem {
 
     public static final String DEFAULT_NAME = "SlaveActorSystem";
-    public static final String DEFAULT_HOST = "127.0.0.1";
     public static final int DEFAULT_PORT = 7879;
 
     private final ActorSystem system;
@@ -27,7 +26,7 @@ public class SlaveActorSystem {
         if (masterPort <= 0)
             masterPort = MasterActorSystem.DEFAULT_PORT;
 
-        final Config config = Utils.createRemoteAkkaConfig(DEFAULT_HOST, port);
+        final Config config = Utils.createRemoteAkkaConfig(Utils.getLocalHost(), port);
         system = ActorSystem.create(DEFAULT_NAME, config);
 
         system.actorOf(Reaper.props(), Reaper.DEFAULT_NAME);
