@@ -3,7 +3,6 @@ package ddm.handson.akka;
 import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
 import com.typesafe.config.Config;
-import ddm.handson.akka.actors.ClusterListener;
 import ddm.handson.akka.actors.Master;
 import ddm.handson.akka.actors.Worker;
 import ddm.handson.akka.actors.SystemRegisterer;
@@ -16,7 +15,7 @@ public class MasterActorSystem extends HandsonSystem {
     public static final String MASTER_ROLE = "master";
 
     public static void start(String systemName, int numberOfWorkers, String host, int port, int numberOfSlaves, String inputFilename) {
-        final Config config = createConfig(systemName,MASTER_ROLE, host, port, host, port);
+        final Config config = createConfig(systemName, MASTER_ROLE, host, port, host, port, numberOfSlaves);
         final ActorSystem system = createSystem(systemName, config);
 
         Cluster.get(system).registerOnMemberUp(() -> { //only waits for the specified systems to become available, does not wait for the actors of each system...

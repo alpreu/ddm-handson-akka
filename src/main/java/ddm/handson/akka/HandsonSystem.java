@@ -21,6 +21,20 @@ public class HandsonSystem {
 
     }
 
+    protected static Config createConfig(String systemName, String systemRole, String host,
+                                         int port, String masterHost, int masterPort, int numberOfSlaves) {
+        return ConfigFactory.parseString(
+                "akka.remote.netty.tcp.hostname = \"" + host + "\"\n" +
+                        "akka.remote.netty.tcp.port = " + port + "\n" +
+                        "akka.remote.artery.canonical.hostname = \"" + host + "\"\n" +
+                        "akka.remote.artery.canonical.port = " + port + "\n" +
+                        "akka.cluster.roles = [" + systemRole + "]\n" +
+                        "akka.cluster.role.slave.min-nr-of-members = " + numberOfSlaves + "\n" +
+                        "akka.cluster.seed-nodes = [\"akka://" + systemName + "@" + masterHost + ":" + masterPort + "\"]")
+                .withFallback(ConfigFactory.load("default"));
+
+    }
+
     protected static ActorSystem createSystem(String systemName, Config config) {
         final ActorSystem system = ActorSystem.create(systemName, config);
 

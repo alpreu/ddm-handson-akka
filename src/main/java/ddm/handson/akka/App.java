@@ -1,41 +1,50 @@
 package ddm.handson.akka;
+import ddm.handson.akka.util.Utils;
 import org.apache.commons.cli.*;
 
 public class App {
     private static final String SYSTEM_NAME = "handson";
-    private static final String MASTER_HOST = "127.0.0.1";
-    private static final String SLAVE_HOST = "127.0.0.1";
-    private static final int MASTER_PORT = 7877;
-    private static final int SLAVE_PORT = 7879;
+    private static final String WORKERSOPT = "workers";
+    private static final String SLAVESOPT = "slaves";
+    private static final String INPUTOPT = "input";
+    private static final String MASTERHOSTOPT = "masterHost";
+    private static final String MASTERPORTOPT = "masterPort";
+    private static final String SLAVEPORTOPT = "slavePort";
 
 
     public static void main(String[] args) {
         Options options = new Options();
-        Option workers = Option.builder()
-                .longOpt("workers")
+        Option workersOpt = Option.builder()
+                .longOpt(WORKERSOPT)
                 .hasArg()
-                .valueSeparator(' ')
                 .build();
-        Option slaves = Option.builder()
-                .longOpt("slaves")
+        Option slavesOpt = Option.builder()
+                .longOpt(SLAVESOPT)
                 .hasArg()
-                .valueSeparator(' ')
                 .build();
-        Option input = Option.builder()
-                .longOpt("input")
+        Option inputOpt = Option.builder()
+                .longOpt(INPUTOPT)
                 .hasArg()
-                .valueSeparator(' ')
                 .build();
-        Option host = Option.builder()
-                .longOpt("host")
+        Option masterHostOpt = Option.builder()
+                .longOpt(MASTERHOSTOPT)
                 .hasArg()
-                .valueSeparator(' ')
+                .build();
+        Option masterPortOpt = Option.builder()
+                .longOpt(MASTERPORTOPT)
+                .hasArg()
+                .build();
+        Option slavePortOpt = Option.builder()
+                .longOpt(SLAVEPORTOPT)
+                .hasArg()
                 .build();
 
-        options.addOption(workers);
-        options.addOption(slaves);
-        options.addOption(input);
-        options.addOption(host);
+        options.addOption(workersOpt);
+        options.addOption(slavesOpt);
+        options.addOption(inputOpt);
+        options.addOption(masterHostOpt);
+        options.addOption(masterPortOpt);
+        options.addOption(slavePortOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -44,16 +53,56 @@ public class App {
             String nodeType = line.getArgList().get(0);
 
             if (nodeType.equals(MasterActorSystem.MASTER_ROLE)) {
-                int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
-                int numberOfSlaves = Integer.parseInt(line.getOptionValue("slaves"));
-                String inputFilename = line.getOptionValue("input");
+                int numberOfWorkers = Integer.parseInt(line.getOptionValue(WORKERSOPT, "0"));
+                int numberOfSlaves = Integer.parseInt(line.getOptionValue(SLAVESOPT, "0"));
+                String masterHost = Utils.getLocalHost();
+                int masterPort = Integer.parseInt(line.getOptionValue(MASTERPORTOPT, "0"));
+                String inputFilename = line.getOptionValue(INPUTOPT, "");
 
-                MasterActorSystem.start(SYSTEM_NAME, numberOfWorkers, MASTER_HOST, MASTER_PORT, numberOfSlaves, inputFilename);
+
+                System.out.println(numberOfWorkers);
+                System.out.println(numberOfSlaves);
+                System.out.println(masterHost);
+                System.out.println(masterPort);
+                System.out.println(inputFilename);
+
+
+                if (numberOfWorkers == 0 ||
+                numberOfSlaves == 0 ||
+                masterPort == 0 ||
+                inputFilename.equals("")) {
+                    HelpFormatter hf = new HelpFormatter();
+                    hf.printHelp("java -jar handson-akka-1.0-SNAPSHOT.jar", options);
+                    System.out.println("Example Usage: java -jar handson-akka-1.0-SNAPSHOT.jar master " +
+                            "--workers 4 --slaves 2  --masterPort 7877 --input students.csv");
+                    return;
+                }
+
+                MasterActorSystem.start(SYSTEM_NAME, numberOfWorkers, masterHost, masterPort, numberOfSlaves, inputFilename);
             } else if (nodeType.equals(SlaveActorSystem.SLAVE_ROLE)) {
-                int numberOfWorkers = Integer.parseInt(line.getOptionValue("workers"));
-                String hostAddress = line.getOptionValue("host");
+                int numberOfWorkers = Integer.parseInt(line.getOptionValue(WORKERSOPT, "0"));
+                String masterHost = line.getOptionValue(MASTERHOSTOPT, Utils.getLocalHost());
+                int masterPort = Integer.parseInt(line.getOptionValue(MASTERPORTOPT, "0"));
+                String slaveHost = Utils.getLocalHost();
+                int slavePort = Integer.parseInt(line.getOptionValue(SLAVEPORTOPT, "0"));
 
-                SlaveActorSystem.start(SYSTEM_NAME, numberOfWorkers, SLAVE_HOST, SLAVE_PORT, MASTER_HOST, MASTER_PORT);
+                System.out.println(numberOfWorkers);
+                System.out.println(masterHost);
+                System.out.println(masterPort);
+                System.out.println(slaveHost);
+                System.out.println(slavePort);
+
+                if (numberOfWorkers == 0 ||
+                masterPort == 0 ||
+                slavePort == 0) {
+                    HelpFormatter hf = new HelpFormatter();
+                    hf.printHelp("java -jar handson-akka-1.0-SNAPSHOT.jar", options);
+                    System.out.println("Example Usage: java -jar handson-akka-1.0-SNAPSHOT.jar slave " +
+                            "--workers 4 --masterPort 7877 --slavePort 7878");
+                    return;
+                }
+
+                SlaveActorSystem.start(SYSTEM_NAME, numberOfWorkers, slaveHost, slavePort, masterHost, masterPort);
             } else {
                 System.err.println("First argument must specify type: '" + MasterActorSystem.MASTER_ROLE + "' or '" + SlaveActorSystem.SLAVE_ROLE + "'");
             }
