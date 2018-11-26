@@ -28,6 +28,7 @@ public class App {
                 .build();
         Option masterHostOpt = Option.builder()
                 .longOpt(MASTERHOSTOPT)
+                .optionalArg(true)
                 .hasArg()
                 .build();
         Option masterPortOpt = Option.builder()
@@ -55,14 +56,11 @@ public class App {
             if (nodeType.equals(MasterActorSystem.MASTER_ROLE)) {
                 int numberOfWorkers = Integer.parseInt(line.getOptionValue(WORKERSOPT, "0"));
                 int numberOfSlaves = Integer.parseInt(line.getOptionValue(SLAVESOPT, "0"));
-                String masterHost = Utils.getLocalHost();
+                String masterHost = line.getOptionValue(MASTERHOSTOPT,  Utils.getLocalHost());
                 int masterPort = Integer.parseInt(line.getOptionValue(MASTERPORTOPT, "0"));
                 String inputFilename = line.getOptionValue(INPUTOPT, "");
 
-                if (numberOfWorkers == 0 ||
-                numberOfSlaves == 0 ||
-                masterPort == 0 ||
-                inputFilename.equals("")) {
+                if (masterPort == 0 || inputFilename.equals("")) {
                     HelpFormatter hf = new HelpFormatter();
                     hf.printHelp("java -jar handson-akka-1.0-SNAPSHOT.jar", options);
                     System.out.println("Example Usage: java -jar handson-akka-1.0-SNAPSHOT.jar master " +
