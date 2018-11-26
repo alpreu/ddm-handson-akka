@@ -2,6 +2,9 @@
 Our solution for the akka hands-on of the Distributed Data Management course at the Hasso-Plattner-Institute.
 We implement the task using `akka-cluster` as well as using plain akka. The [master branch](https://github.com/alpreu/ddm-handson-akka) is based on the [akka-cluster branch](https://github.com/alpreu/ddm-handson-akka/tree/akka-cluster), if you want to use the plain akka solution checkout the [akka-plain branch](https://github.com/alpreu/ddm-handson-akka/tree/akka-plain).
 
+## Architecture
+![architecture of the system](architecture_akka-cluster.png)
+
 ## Running the system
 Build the project with maven first.  
 To start the MasterActorSystem run:
