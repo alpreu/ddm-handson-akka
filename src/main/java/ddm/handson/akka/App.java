@@ -64,7 +64,7 @@ public class App {
                     HelpFormatter hf = new HelpFormatter();
                     hf.printHelp("java -jar handson-akka-1.0-SNAPSHOT.jar", options);
                     System.out.println("Example Usage: java -jar handson-akka-1.0-SNAPSHOT.jar master " +
-                            "--workers 4 --slaves 2  --masterPort 7877 --input students.csv");
+                            "--workers 4 --slaves 2  --masterPort <Master Port> --input students.csv");
                     return;
                 }
 
@@ -82,7 +82,7 @@ public class App {
                     HelpFormatter hf = new HelpFormatter();
                     hf.printHelp("java -jar handson-akka-1.0-SNAPSHOT.jar", options);
                     System.out.println("Example Usage: java -jar handson-akka-1.0-SNAPSHOT.jar slave " +
-                            "--workers 4 --masterPort 7877 --slavePort 7878");
+                            "--workers 4 --masterHost <Master Address> --masterPort <Master Port> --slavePort <Port>");
                     return;
                 }
 
